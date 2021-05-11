@@ -223,19 +223,20 @@ killCracksAndCreateOutput () {
   # Log: [segment @ 0x7fe6c4008200] Opening 'parts-offset/vocals-offset-000000.wav' for writing
   find $STEM-offset.$EXT | sort -n | xargs -J % ffmpeg -i % -f segment -segment_time 1 -c copy parts-offset/$STEM-offset-%06d.$EXT
 
-  # replace the 3 seconds around the cracks with the parts from the seconds processing
-  x=30
-  y=$(printf "%06d" $x)
-  while [ -f "parts-30/$STEM-30-$y.$EXT" ]; do
-    mv parts-offset/$STEM-offset-$y.$EXT parts-30/$STEM-30-$y.$EXT
-    z=$(( $x - 1 ))
-    z=$(printf "%06d" $z)
-    mv parts-offset/$STEM-offset-$z.$EXT parts-30/$STEM-30-$z.$EXT
-    z=$(( $x + 1 ))
-    z=$(printf "%06d" $z)
-    mv parts-offset/$STEM-offset-$z.$EXT parts-30/$STEM-30-$z.$EXT
-    x=$(( $x + 30 ))
-    y=$(printf "%06d" $x)
+  # replace the 3 seconds around the cracks with the parts from the offset.
+  cur=30 # the current second, since first clip ends at 30 sec
+  curPad=$(printf "%06d" $cur)
+  # in the separated/"$NAME"/ folder:
+  while [ -f "parts-offset/$STEM-offset-$curPad.$EXT" ]; do
+    mv parts-offset/$STEM-offset-$curPad.$EXT parts-30/$STEM-30-$curPad.$EXT
+    prev=$(( $cur - 1 ))
+    prevPad=$(printf "%06d" $prev)
+    mv parts-offset/$STEM-offset-$prevPad.$EXT parts-30/$STEM-30-$prevPad.$EXT
+    next=$(( $cur + 1 ))
+    nextPad=$(printf "%06d" $next)
+    mv parts-offset/$STEM-offset-$nextPad.$EXT parts-30/$STEM-30-$nextPad.$EXT
+    cur=$(( $cur + 30 ))
+    curPad=$(printf "%06d" $cur)
   done
 
   # create list of the parts, like `file 'parts-30/vocals-30-000000.wav'` etc.
