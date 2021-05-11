@@ -183,16 +183,15 @@ ffmpeg -i "$FILE" -f segment -segment_time 30 -c copy "$NAME"-%03d.$EXT
 # do the separation on the parts
 nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o separated
 
-joinParts 30
+joinParts 30 # creates separated/"$NAME"/vocals-30.wav, and similar for the other stems.
 
-# split the audio file in 30s parts, but first part only 15s
+# split the orig. audio file into 30s parts, via splitting to 15s parts and joining two and two (except the first)
 offsetSplit
 
-# do the separation on the parts
+# do the separation on the parts (which are now the split offsets of the orig. audio file)
 nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o separated
 
-joinParts offset
-
+joinParts offset # creates `separated/"$NAME"/vocals-offset.wav`, and similar for the other stems.
 
 cd separated/"$NAME"
 
