@@ -184,9 +184,6 @@ nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o se
 
 joinParts 30
 
-# clean up
-rm "$NAME"-*
-
 # split the audio file in 30s parts, but first part only 15s
 offsetSplit
 
@@ -195,8 +192,6 @@ nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o se
 
 joinParts offset
 
-# clean up
-rm "$NAME"-*
 
 cd separated/"$NAME"
 
