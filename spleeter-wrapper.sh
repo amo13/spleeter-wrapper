@@ -113,28 +113,28 @@ joinParts () {
   fileArrayOther=("${fileArray[@]/%//other.wav}")
 
   # list all files to be joined in a file for ffmpeg to use as input list
-  printf "file '%s'\n" "${fileArrayVocals[@]}" > concat-list.txt
+  printf "file '%s'\n" "${fileArrayVocals[@]}" > concat-list"$SPLITS".txt
 
   # concatenate the parts and convert the result to $EXT
-  ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/vocals.wav
+  ffmpeg -f concat -safe 0 -i concat-list"$SPLITS".txt -c copy separated/"$NAME"/vocals.wav
   ffmpeg -i separated/"$NAME"/vocals.wav separated/"$NAME"/vocals"$SPLITS".$EXT
 
   # repeat for the other stems
   # drums
-  printf "file '%s'\n" "${fileArrayDrums[@]}" > concat-list.txt
-  ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/drums.wav
+  printf "file '%s'\n" "${fileArrayDrums[@]}" > concat-list"$SPLITS".txt
+  ffmpeg -f concat -safe 0 -i concat-list"$SPLITS".txt -c copy separated/"$NAME"/drums.wav
   ffmpeg -i separated/"$NAME"/drums.wav separated/"$NAME"/drums"$SPLITS".$EXT
   # bass
-  printf "file '%s'\n" "${fileArrayBass[@]}" > concat-list.txt
-  ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/bass.wav
+  printf "file '%s'\n" "${fileArrayBass[@]}" > concat-list"$SPLITS".txt
+  ffmpeg -f concat -safe 0 -i concat-list"$SPLITS".txt -c copy separated/"$NAME"/bass.wav
   ffmpeg -i separated/"$NAME"/bass.wav separated/"$NAME"/bass"$SPLITS".$EXT
   # piano
-  printf "file '%s'\n" "${fileArrayPiano[@]}" > concat-list.txt
-  ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/piano.wav
+  printf "file '%s'\n" "${fileArrayPiano[@]}" > concat-list"$SPLITS".txt
+  ffmpeg -f concat -safe 0 -i concat-list"$SPLITS".txt -c copy separated/"$NAME"/piano.wav
   ffmpeg -i separated/"$NAME"/piano.wav separated/"$NAME"/piano"$SPLITS".$EXT
   # other
-  printf "file '%s'\n" "${fileArrayOther[@]}" > concat-list.txt
-  ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/other.wav
+  printf "file '%s'\n" "${fileArrayOther[@]}" > concat-list"$SPLITS".txt
+  ffmpeg -f concat -safe 0 -i concat-list"$SPLITS".txt -c copy separated/"$NAME"/other.wav
   ffmpeg -i separated/"$NAME"/other.wav separated/"$NAME"/other"$SPLITS".$EXT
 
   # clean up
@@ -143,7 +143,9 @@ joinParts () {
   rm separated/"$NAME"/bass.wav
   rm separated/"$NAME"/piano.wav
   rm separated/"$NAME"/other.wav
-  rm concat-list.txt
+
+  rm concat-list"$SPLITS".txt
+
   OLDIFS=$IFS
   IFS=$'\n'
   rm -r $(printf "%s\n" "${fileArray[@]}")
