@@ -165,7 +165,7 @@ joinParts () {
 offsetSplit () {
 
   # split the audio in 15s parts
-  ffmpeg -i "$FILE" -f segment -segment_time 15 -c copy -y "$NAME"-%03d.$EXT
+  ffmpeg -i "$FILE" -f segment -segment_time 15 -c copy -y "$NAME"-%03d.$ORIG_EXT
 
   # leave the first 15s clip as is (000).
   # join the second (001) into the third clip (002), the fourth into the fifth, etc.
@@ -174,12 +174,12 @@ offsetSplit () {
   prev=$(( $cur - 1 ))
   prevPad=$(printf "%03d" $prev)
   # in the root folder:
-  while [ -f "$NAME-$curPad.$EXT" ]; do
+  while [ -f "$NAME-$curPad.$ORIG_EXT" ]; do
     # correctly concat all file types, also WAV (where each file has a 46 byte file header if made with ffmpeg)
-    ffmpeg -i "$NAME-$prevPad.$EXT" -i "$NAME-$curPad.$EXT" -filter_complex '[0:0][1:0]concat=n=2:v=0:a=1[out]' -map '[out]' tmp.$EXT
-    rm "$NAME"-$curPad.$EXT
-    rm "$NAME"-$prevPad.$EXT
-    mv tmp.$EXT "$NAME"-$curPad.$EXT
+    ffmpeg -i "$NAME-$prevPad.$ORIG_EXT" -i "$NAME-$curPad.$ORIG_EXT" -filter_complex '[0:0][1:0]concat=n=2:v=0:a=1[out]' -map '[out]' tmp.$ORIG_EXT
+    rm "$NAME"-$curPad.$ORIG_EXT
+    rm "$NAME"-$prevPad.$ORIG_EXT
+    mv tmp.$ORIG_EXT "$NAME"-$curPad.$ORIG_EXT
     cur=$(( $cur + 2 ))
     curPad=$(printf "%03d" $cur)
     prev=$(( $cur - 1 ))
@@ -188,10 +188,10 @@ offsetSplit () {
 
 }
 
-# split the audio file in 30s parts
-ffmpeg -i "$FILE" -f segment -segment_time 30 -c copy "$NAME"-%03d.$EXT
+# split the orig. audio file into 30s parts
+ffmpeg -i "$FILE" -f segment -segment_time 30 -c copy "$NAME"-%03d.$ORIG_EXT
 
-# do the separation on the parts
+# do the separation on the parts, spleeter will output WAV files
 nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o separated
 
 joinParts 30 # creates separated/"$NAME"/vocals-30.wav, and similar for the other stems.
