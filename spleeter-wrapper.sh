@@ -216,10 +216,12 @@ killCracksAndCreateOutput () {
   # create temporary folders
   mkdir parts-30
   mkdir parts-offset
-  
-  # split the stem into 1s parts
-  ffmpeg -i $STEM-30.$EXT -f segment -segment_time 1 -c copy parts-30/$STEM-30-%06d.$EXT
-  ffmpeg -i $STEM-offset.$EXT -f segment -segment_time 1 -c copy parts-offset/$STEM-offset-%06d.$EXT
+
+  # Split the stem into 1s parts. Handles long audio clips reliably by using xargs to break up the standard input and running ffmpeg in batches.
+  # Log: [segment @ 0x7ff0d0815200] Opening 'parts-30/vocals-30-000000.wav' for writing
+  find $STEM-30.$EXT | sort -n | xargs -J % ffmpeg -i % -f segment -segment_time 1 -c copy parts-30/$STEM-30-%06d.$EXT
+  # Log: [segment @ 0x7fe6c4008200] Opening 'parts-offset/vocals-offset-000000.wav' for writing
+  find $STEM-offset.$EXT | sort -n | xargs -J % ffmpeg -i % -f segment -segment_time 1 -c copy parts-offset/$STEM-offset-%06d.$EXT
 
   # replace the 3 seconds around the cracks with the parts from the seconds processing
   x=30
