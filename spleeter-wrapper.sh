@@ -201,7 +201,7 @@ rm "$NAME"-*
 
 cd separated/"$NAME"
 
-killCracks () {
+killCracksAndCreateOutput () {
 
   STEM="$1"
 
@@ -241,11 +241,11 @@ killCracks () {
 
 }
 
-killCracks vocals
-killCracks bass
-killCracks drums
-killCracks piano
-killCracks other
+killCracksAndCreateOutput vocals
+killCracksAndCreateOutput bass
+killCracksAndCreateOutput drums
+killCracksAndCreateOutput piano
+killCracksAndCreateOutput other
 
 # cleanup temp files
 rm concat.txt
