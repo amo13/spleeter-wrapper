@@ -255,5 +255,20 @@ rm piano-offset.$EXT
 rm other-30.$EXT
 rm other-offset.$EXT
 
+# fix the timestamps in the output, so the file won't be treated as malformed/corrupt/invalid if later importing to Audacity or other tool.
+# we presume to still be in the separated/"$NAME"/ directory here.
+fixTimestamps() {
+  mv $1.$EXT $1_but_invalid_timestamps.$EXT
+  # recreate timestamps without re-encoding
+  ffmpeg -vsync drop -i $1_but_invalid_timestamps.$EXT -map 0:a? -acodec copy $1.$EXT
+  rm $1_but_invalid_timestamps.$EXT
+}
+
+fixTimestamps vocals
+fixTimestamps bass
+fixTimestamps drums
+fixTimestamps piano
+fixTimestamps other
+
 # deactivate anaconda / miniconda
 conda deactivate
