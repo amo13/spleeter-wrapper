@@ -92,13 +92,12 @@ joinParts () {
   OLDIFS=$IFS
   IFS=$'\n'
 
-  # read all file name into an array
-  fileArray=($(find $NAME-* -type f | cut -f 1 -d '.'))
+  # read all file names into an array, and ensure increasing order so stitched output will be correct
+  fileArray=($(find $NAME-* -type f | sort -n | cut -f 1 -d '.'))
 
-  # keep a copy of the array for cleanup later
-  fileArrayOrig=($(find $NAME-* -type f | cut -f 1 -d '.'))
+  # keep a copy of the list of files for cleanup later
+  fileArrayWithExt=($(find $NAME-* -type f | sort -n))
 
-  fileArrayWithExt=($(find $NAME-* -type f))
   # restore IFS to the original value (which is: space, tab, newline)
   IFS=$OLDIFS
 
@@ -148,8 +147,8 @@ joinParts () {
 
   OLDIFS=$IFS
   IFS=$'\n'
-  rm -r $(printf "%s\n" "${fileArray[@]}")
-  rm $(printf "%s\n" "${fileArrayOrig[@]}")
+  rm -r $(printf "%s\n" "${fileArray[@]}") # the ones under separated/
+  rm $(printf "%s\n" "${fileArrayWithExt[@]}") # the ones in the root folder
   IFS=$OLDIFS
 
 }
@@ -227,8 +226,9 @@ killCracksAndCreateOutput () {
     y=$(printf "%06d" $x)
   done
 
+  # create list of the parts, like `file 'parts-30/vocals-30-000000.wav'` etc.
+  find parts-30 -name "$STEM*" | sort -n | sed 's:\ :\\\ :g'| sed "s/^/file '/" | sed "s/$/'/" > concat.txt
   # reassemble the full stem
-  find parts-30/$STEM* | sed 's:\ :\\\ :g'| sed 's/^/file /' > concat.txt
   ffmpeg -f concat -safe 0 -i concat.txt -c copy $STEM.$EXT
 
   # clean up
