@@ -67,18 +67,19 @@ source $CONDA_PATH/etc/profile.d/conda.sh
 conda activate $MY_ENV # will also work if MY_ENV is not set.
 
 FILE="$1"
- 
+
 # failsafe - exit if no file is provided as argument
 [ "$FILE" == "" ] && exit
 
+# remove extension, by using . as delimiter and select the 1st part (to the left).
 NAME=$(printf "$FILE" | cut -f 1 -d '.')
 EXT=$(printf "$FILE" | awk -F . '{print $NF}')
 
 joinParts () {
 
-  # name appended to the split parts
+  # first param is name to append to the split parts
   SPLITS="$1"
-   
+
   # failsafe - exit if no file is provided as argument
   [ "$SPLITS" == "" ] && SPLITS="30"
 
@@ -87,7 +88,7 @@ joinParts () {
   # create output folder
   mkdir -p separated/"$NAME"
 
-  # save and change IFS
+  # save and change Internal Field Separator (IFS) which says where to split strings into array items
   OLDIFS=$IFS
   IFS=$'\n'
 
@@ -173,7 +174,7 @@ offsetSplit () {
     z=$(( $x - 1 ))
     z=$(printf "%03d" $z)
   done
-  
+
 }
 
 # split the audio file in 30s parts
@@ -233,7 +234,7 @@ killCracks () {
   # reassemble the full stem
   find parts-30/$STEM* | sed 's:\ :\\\ :g'| sed 's/^/file /' > concat.txt
   ffmpeg -f concat -safe 0 -i concat.txt -c copy $STEM.$EXT
-  
+
   # clean up
   rm -r parts-30
   rm -r parts-offset
@@ -246,7 +247,7 @@ killCracks drums
 killCracks piano
 killCracks other
 
-# cleanup
+# cleanup temp files
 rm concat.txt
 rm vocals-30.$EXT
 rm vocals-offset.$EXT
