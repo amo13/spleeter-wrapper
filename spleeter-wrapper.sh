@@ -73,7 +73,13 @@ FILE="$1"
 
 # remove extension, by using . as delimiter and select the 1st part (to the left).
 NAME=$(printf "$FILE" | cut -f 1 -d '.')
-EXT=$(printf "$FILE" | awk -F . '{print $NF}')
+
+# Do all the processing on WAV files. (Should not increase consumed disk space.)
+# To ensure the parts are processed and joined together correctly.
+# Before, WMA files especially had problems with long gaps and erroneous total duration (even after fixTimestamps() were run).
+# This avoids that, and prevents it happening for other formats too.
+ORIG_EXT=$(printf "$FILE" | awk -F . '{print $NF}')
+EXT="wav" # wav will also preserve quality, since lossless
 
 joinParts () {
 
@@ -114,8 +120,10 @@ joinParts () {
   # list all files to be joined in a file for ffmpeg to use as input list
   printf "file '%s'\n" "${fileArrayVocals[@]}" > concat-list"$SPLITS".txt
 
-  # concatenate the parts and convert the result to $EXT
+  # concatenate the parts.
   ffmpeg -f concat -safe 0 -i concat-list"$SPLITS".txt -c copy separated/"$NAME"/vocals.wav
+  # Make a renamed copy, so it can later be used in killCracksAndCreateOutput().
+  # Also convert the result to $EXT, in case $EXT is set to something different than WAV.
   ffmpeg -i separated/"$NAME"/vocals.wav separated/"$NAME"/vocals"$SPLITS".$EXT
 
   # repeat for the other stems
@@ -159,20 +167,23 @@ offsetSplit () {
   # split the audio in 15s parts
   ffmpeg -i "$FILE" -f segment -segment_time 15 -c copy -y "$NAME"-%03d.$EXT
 
-  # join together second and third, fourth and fifth, etc.
-  x=2
-  y=$(printf "%03d" $x)
-  z=$(( $x - 1 ))
-  z=$(printf "%03d" $z)
-  while [ -f "$NAME-$y.$EXT" ]; do
-    ffmpeg -i "concat:$NAME-$z.$EXT|$NAME-$y.$EXT" -acodec copy tmp.$EXT
-    rm "$NAME"-$y.$EXT
-    rm "$NAME"-$z.$EXT
-    mv tmp.$EXT "$NAME"-$y.$EXT
-    x=$(( $x + 2 ))
-    y=$(printf "%03d" $x)
-    z=$(( $x - 1 ))
-    z=$(printf "%03d" $z)
+  # leave the first 15s clip as is (000).
+  # join the second (001) into the third clip (002), the fourth into the fifth, etc.
+  cur=2 # the current clip index, 0-indexed
+  curPad=$(printf "%03d" $cur) # 002, third clip
+  prev=$(( $cur - 1 ))
+  prevPad=$(printf "%03d" $prev)
+  # in the root folder:
+  while [ -f "$NAME-$curPad.$EXT" ]; do
+    # correctly concat all file types, also WAV (where each file has a 46 byte file header if made with ffmpeg)
+    ffmpeg -i "$NAME-$prevPad.$EXT" -i "$NAME-$curPad.$EXT" -filter_complex '[0:0][1:0]concat=n=2:v=0:a=1[out]' -map '[out]' tmp.$EXT
+    rm "$NAME"-$curPad.$EXT
+    rm "$NAME"-$prevPad.$EXT
+    mv tmp.$EXT "$NAME"-$curPad.$EXT
+    cur=$(( $cur + 2 ))
+    curPad=$(printf "%03d" $cur)
+    prev=$(( $cur - 1 ))
+    prevPad=$(printf "%03d" $prev)
   done
 
 }
@@ -269,6 +280,22 @@ fixTimestamps bass
 fixTimestamps drums
 fixTimestamps piano
 fixTimestamps other
+
+
+# convert the file back to the original format, if the original format was not WAV.
+if [[ $ORIG_EXT != $EXT ]]; then
+  ffmpeg -i vocals.$EXT vocals.$ORIG_EXT
+  rm vocals.$EXT # comment out to keep the resulting (potentially large) WAV file.
+  # repeat for other stems
+  ffmpeg -i bass.$EXT bass.$ORIG_EXT
+  rm bass.$EXT
+  ffmpeg -i drums.$EXT drums.$ORIG_EXT
+  rm drums.$EXT
+  ffmpeg -i piano.$EXT piano.$ORIG_EXT
+  rm piano.$EXT
+  ffmpeg -i other.$EXT other.$ORIG_EXT
+  rm other.$EXT
+fi
 
 # deactivate anaconda / miniconda
 conda deactivate
