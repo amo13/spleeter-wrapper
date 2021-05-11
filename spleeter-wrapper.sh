@@ -60,9 +60,11 @@
 #                   - @avindra, https://github.com/deezer/spleeter/issues/391#issuecomment-642986976
 #
 
-# activate (mini)conda
-source ~/miniconda3/etc/profile.d/conda.sh
-conda activate
+# activate anaconda / miniconda
+CONDA_PATH=$(conda info | grep -i 'base environment' | awk '{print $4}')
+# must use `source` since "Functions are not exported by default to be made available in subshells." https://github.com/conda/conda/issues/7980#issuecomment-441358406
+source $CONDA_PATH/etc/profile.d/conda.sh
+conda activate $MY_ENV # will also work if MY_ENV is not set.
 
 FILE="$1"
  
@@ -257,5 +259,5 @@ rm piano-offset.$EXT
 rm other-30.$EXT
 rm other-offset.$EXT
 
-# deactivate (mini)conda
+# deactivate anaconda / miniconda
 conda deactivate
