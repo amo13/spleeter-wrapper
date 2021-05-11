@@ -5,6 +5,7 @@
 #
 #     Author: Amaury Bodet
 #
+#     ---
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
@@ -17,6 +18,47 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#     ---
+#
+#     "
+#     You can feed an audio file of any length into the script and the whole process
+#     is not going to eat more than 2GB RAM. I think for me it was around 1.6GB.
+#
+#     How it works:
+#
+#       1. Split the audio file into 30s parts.
+#       2. Process them all with spleeter.
+#       3. Join the resulting stem-parts to the full-length stems.
+#       4. Split the audio file again into 30s parts but with the first part being only 15s long.
+#       5. Process them again with spleeter.
+#       6. Join the results to full-length stems again.
+#       7. Replace 3s around every crack in the first stems with the respective 3 seconds from the second stems.
+#       8. Clean up.
+#
+#     Downside:
+#
+#       Processes the audio twice with spleeter
+#       The result is not 100% accurate: on a 3m30s track the stems were around 200ms too long.
+#       I am not sure about what exactly caused the 200ms error for me. I was suspecting ffmpeg being inaccurate when splitting and joining, but I don't really know. Anyway, the resulting stems are totally acceptable.
+#     "
+#     From: https://github.com/deezer/spleeter/issues/391#issuecomment-633155556
+#
+#
+#     Overlap explained by the author @amo13 on github:
+#     "
+#     Basically, it needs to process the input audio twice but with the
+#     second processing doing one 15 seconds chunk, and then again 30s
+#     chunks for the rest. Then it takes 3s around the crack in the first
+#     processing from the second one, and puts everything back together.
+#     It's probably not ideal but maybe someone will have a good idea how
+#     to make it better.
+#     "
+#     From: https://github.com/deezer/spleeter/issues/437#issuecomment-652807569
+#
+#     TODO: "rather than doing the work of splitting up the input files, one can use the -s (aka --offset) option to the separate command.
+#                  This way, you can process a single file iteratively using spleeter, rather than splitting it up manually beforehand."
+#                   - @avindra, https://github.com/deezer/spleeter/issues/391#issuecomment-642986976
+#
 
 # activate (mini)conda
 source ~/miniconda3/etc/profile.d/conda.sh
