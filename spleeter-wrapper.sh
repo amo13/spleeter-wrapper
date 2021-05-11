@@ -99,12 +99,11 @@ joinParts () {
   fileArrayOrig=($(find $NAME-* -type f | cut -f 1 -d '.'))
 
   fileArrayWithExt=($(find $NAME-* -type f))
+  # restore IFS to the original value (which is: space, tab, newline)
+  IFS=$OLDIFS
 
   # prepend separated/ to each array element
   fileArray=("${fileArray[@]/#/separated/}")
-   
-  # restore it
-  IFS=$OLDIFS
 
   # append /vocals.wav to each element and create arrays for the stems
   fileArrayVocals=("${fileArray[@]/%//vocals.wav}")
