@@ -3,7 +3,8 @@
 #     A script for using spleeter with audio of any length
 #     and with limited RAM on the processing machine
 #
-#     Author: Amaury Bodet
+#     Original author:    Amaury Bodet
+#     Contributor(s):     Magne Matre Gåsland
 #
 #     License: GNU GPL v3 or later version. (See bottom of this file for entire license notice.)
 #
