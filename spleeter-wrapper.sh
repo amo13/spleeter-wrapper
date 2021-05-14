@@ -8,8 +8,7 @@
 #
 #     License: GNU GPL v3 or later version. (See bottom of this file for entire license notice.)
 #
-#
-#     Cracks:
+#     Cracks are the reason the overlap correction in this script is needed:
 #     "
 #     Spleeter is adding a tiny padding after each output stem file,
 #     what makes a small gap when stitching back the 30's chunks in one single stem
@@ -24,7 +23,7 @@
 #
 #     "
 #     You can feed an audio file of any length into the script and the whole process
-#     is not going to eat more than 2GB RAM. I think for me it was around 1.6GB.
+#     is not going to eat more than 2GB RAM. I think for me [Amaury] it was around 1.6GB.
 #
 #     How it works:
 #
@@ -47,7 +46,7 @@
 #     From: https://github.com/deezer/spleeter/issues/391#issuecomment-633155556
 #
 #
-#     Overlap explained by the author @amo13 on github:
+#     Overlap correction process, explained by the original author Amaury (@amo13) on github:
 #     "
 #     Basically, it needs to process the input audio twice but with the
 #     second processing doing one 15 seconds chunk, and then again 30s
