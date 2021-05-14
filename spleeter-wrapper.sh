@@ -20,6 +20,19 @@
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #     ---
 #
+#     Cracks:
+#     "
+#     Spleeter is adding a tiny padding after each output stem file,
+#     what makes a small gap when stitching back the 30's chunks in one single stem
+#     "
+#     From: https://github.com/deezer/spleeter/issues/437#issue-648995964
+#
+#     "
+#     The padding is unavoidable, due to a strange behavior of the STFT of tensorflow
+#     that spleeter uses but does not compensate for.
+#     "
+#     From: https://github.com/deezer/spleeter/issues/437#issuecomment-652516231
+#
 #     "
 #     You can feed an audio file of any length into the script and the whole process
 #     is not going to eat more than 2GB RAM. I think for me it was around 1.6GB.
@@ -37,9 +50,10 @@
 #
 #     Downside:
 #
-#       Processes the audio twice with spleeter
-#       The result is not 100% accurate: on a 3m30s track the stems were around 200ms too long.
-#       I am not sure about what exactly caused the 200ms error for me. I was suspecting ffmpeg being inaccurate when splitting and joining, but I don't really know. Anyway, the resulting stems are totally acceptable.
+#       1. Processes the audio twice with spleeter.
+#       2. The result is not 100% accurate: on a 3m30s track the stems were around 200ms too long.
+#       I am not sure about what exactly caused the 200ms error for me. I was suspecting ffmpeg being inaccurate
+#       when splitting and joining, but I don't really know. Anyway, the resulting stems are totally acceptable.
 #     "
 #     From: https://github.com/deezer/spleeter/issues/391#issuecomment-633155556
 #
