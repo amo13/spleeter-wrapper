@@ -72,7 +72,7 @@ conda activate $MY_ENV # will also work if MY_ENV is not set.
 
 FILE="$1"
 
-# failsafe - exit if no file is provided as argument
+# Failsafe - exit if no file is provided as argument
 [ "$FILE" == "" ] && exit
 
 # remove extension, by using . as delimiter and select the 1st part (to the left).
@@ -83,8 +83,7 @@ joinParts () {
 
   # first param is name to append to the split parts
   SPLITS="$1"
-
-  # failsafe - exit if no file is provided as argument
+  # Failsafe - set to 30 if no stem is provided as argument
   [ "$SPLITS" == "" ] && SPLITS="30"
 
   SPLITS="-$SPLITS"
