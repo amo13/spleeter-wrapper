@@ -61,6 +61,8 @@
 #                  This way, you can process a single file iteratively using spleeter, rather than splitting it up manually beforehand."
 #                   - @avindra, https://github.com/deezer/spleeter/issues/391#issuecomment-642986976
 #
+#     Disk space usage, at most: Size of original file when converted to WAV * # of stems * 2 (since -30 and -offsets) * 2 (under joinParts when splitting into 1s clips).
+#     So if an orig. 2h audio file in WAV is 669 MB, and we use spleeter with 5stems, then it would take 669 * 5 * 2 * 2 = 13380 MB = 13.38 GB disk space during processing.
 
 # activate anaconda / miniconda
 CONDA_PATH=$(conda info | grep -i 'base environment' | awk '{print $4}')
@@ -175,23 +177,32 @@ offsetSplit () {
 # split the orig. audio file into 30s parts
 ffmpeg -i "$FILE" -f segment -segment_time 30 -c copy "$NAME"-%03d.$EXT
 
-# do the separation on the parts, spleeter will output WAV files
+# Do the separation on the parts. Spleeter will here output WAV files, one for each stem (consuming a lot of hard drive space).
+# 5x: The 5x space of orig. file in WAV comes from the 5 stems.
 nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o separated
 
-# create separated/"$NAME"/vocals-30.wav, and similar for the other stems.
+# Create separated/"$NAME"/vocals-30.wav, and similar for the other stems.
+# 5x2x: Temporarily uses 2x space of stems = $stems-30.wav, before the joined stems are created, and orig. stems deleted, so back to 5x space of orig. file in WAV.
 joinParts 30
 
-# split the orig. audio file into 30s parts, via splitting to 15s parts and joining two and two (except the first)
+
+# Split the orig. audio file into 30s parts, via splitting to 15s parts and joining two and two (except the first).
+# Does not use WAV files, but original $EXT.
 offsetSplit
 
-# do the separation on the parts (which are now the split offsets of the orig. audio file)
+# Do the separation on the parts (which are now the split offsets of the orig. audio file).
+# Spleeter will here output WAV files, one for each stem (consuming a lot of hard drive space).
+# 5x2x: 5x space of orig. file in WAV (old stems: vocals-30.wav etc.) + 5x space of orig. file in WAV (new stems).
 nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o separated
 
-# create `separated/"$NAME"/vocals-offset.wav`, and similar for the other stems.
+# Create `separated/"$NAME"/vocals-offset.wav`, and similar for the other stems.
+# 5x2x2x: temporarily 2x space of new stems = $stems-offset.wav (5x2x2x), when joined stems created, before orig. stems deleted, then back to: 5x2x
 joinParts offset
+
 
 cd separated/"$NAME"
 
+# 5x2x2x: since 5x2x from before, plus both the 30-stems and the offset-stems are split into 1s fragments. After replacing, the offset-stems are deleted, so it's back to 5x2x
 killCracksAndCreateOutput () {
 
   STEM="$1"
@@ -210,6 +221,7 @@ killCracksAndCreateOutput () {
   # Logs: [segment @ 0x7ff0d0815200] Opening 'parts-30/vocals-30-000000.wav' for writing
   ffmpeg -i $STEM-30.wav -f segment -segment_time 1 -c copy parts-30/$STEM-30-%06d.wav
   rm $STEM-30.wav # since multiple WAV files existing simultaneously would consume much HDD space
+  # 5x2x2x: The space consumption will be at its highest at this point.
   # Logs: [segment @ 0x7fe6c4008200] Opening 'parts-offset/vocals-offset-000000.wav' for writing
   ffmpeg -i $STEM-offset.wav -f segment -segment_time 1 -c copy parts-offset/$STEM-offset-%06d.wav
   rm $STEM-offset.wav
