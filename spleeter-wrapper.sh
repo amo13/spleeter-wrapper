@@ -287,11 +287,11 @@ killCracksAndCreateOutput other
 
 # Fix the timestamps in the output, so the file won't be treated as malformed/corrupt/invalid if later importing to Audacity or other tool.
 # we presume to still be in the separated/"$NAME"/ directory here.
-fixTimestamps() {
-  mv $1.wav $1_but_invalid_timestamps.wav
+fixTimestamps () {
+  mv $1.$EXT $1_but_invalid_timestamps.$EXT
   # recreate timestamps without re-encoding
-  ffmpeg -vsync drop -i $1_but_invalid_timestamps.wav -map 0:a? -acodec copy $1.wav
-  rm $1_but_invalid_timestamps.wav
+  ffmpeg -vsync drop -i $1_but_invalid_timestamps.$EXT -map 0:a? -acodec copy $1.$EXT
+  rm $1_but_invalid_timestamps.$EXT
 }
 
 fixTimestamps vocals
@@ -299,22 +299,6 @@ fixTimestamps bass
 fixTimestamps drums
 fixTimestamps piano
 fixTimestamps other
-
-
-# convert the file back to the original format, if the original format was not WAV.
-if [[ $EXT != "wav" ]]; then
-  ffmpeg -i vocals.wav vocals.$EXT
-  rm vocals.wav # comment out to keep the resulting (potentially large) WAV file.
-  # repeat for other stems
-  ffmpeg -i bass.wav bass.$EXT
-  rm bass.wav
-  ffmpeg -i drums.wav drums.$EXT
-  rm drums.wav
-  ffmpeg -i piano.wav piano.$EXT
-  rm piano.wav
-  ffmpeg -i other.wav other.$EXT
-  rm other.wav
-fi
 
 # deactivate anaconda / miniconda
 conda deactivate
