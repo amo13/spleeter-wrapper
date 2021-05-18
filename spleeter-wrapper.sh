@@ -208,7 +208,7 @@ killCracksAndCreateOutput () {
 
   STEM="$1"
 
-  # failsafe - exit if no file is provided as argument
+  # failsafe - set to vocals if no stem is provided as argument
   [ "$STEM" == "" ] && STEM="vocals"
 
   # Create temporary folders
