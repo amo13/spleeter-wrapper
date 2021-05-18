@@ -120,7 +120,7 @@ joinParts () {
   # concatenate the parts, and create vocals-30.wav or vocals-offset.wav, to be used in killCracksAndCreateOutput() later.
   ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/vocals"$SPLITS".wav
 
-  # repeat for the other stems
+  # Repeat the same concatenation process for the other stems:
   # drums
   printf "file '%s'\n" "${fileArrayDrums[@]}" > concat-list.txt # where > will overwrite file, not append
   ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/drums"$SPLITS".wav
@@ -147,14 +147,15 @@ joinParts () {
 
 }
 
-# split the audio file in 30s parts, but first part only 15s
+# Split the audio file in 30s parts, but first part only 15s
 offsetSplit () {
 
-  # split the audio in 15s parts
+  # First split the audio in 15s parts.
+  # Can be done on original file format, since later only concatenating two and two parts, using filter_complex.
   ffmpeg -i "$FILE" -f segment -segment_time 15 -c copy -y "$NAME"-%03d.$EXT
 
-  # leave the first 15s clip as is (000).
-  # join the second (001) into the third clip (002), the fourth into the fifth, etc.
+  # Then leave the first 15s clip as is (000).
+  # Join the second (001) into the third clip (002), the fourth into the fifth, etc. so the resulting parts are 30s clips.
   cur=2 # the current clip index, 0-indexed
   curPad=$(printf "%03d" $cur) # 002, third clip
   prev=$(( $cur - 1 ))
@@ -174,7 +175,7 @@ offsetSplit () {
 
 }
 
-# split the orig. audio file into 30s parts
+# Split the orig. audio file into 30s parts
 ffmpeg -i "$FILE" -f segment -segment_time 30 -c copy "$NAME"-%03d.$EXT
 
 # Do the separation on the parts. Spleeter will here output WAV files, one for each stem (consuming a lot of hard drive space).
@@ -210,7 +211,7 @@ killCracksAndCreateOutput () {
   # failsafe - exit if no file is provided as argument
   [ "$STEM" == "" ] && STEM="vocals"
 
-  # create temporary folders
+  # Create temporary folders
   mkdir parts-30
   mkdir parts-offset
 
@@ -242,10 +243,10 @@ killCracksAndCreateOutput () {
     curPad=$(printf "%06d" $cur)
   done
 
-  # create list of the parts, like `file 'parts-30/vocals-30-000000.wav'` etc.
+  # Create list of the parts, like `file 'parts-30/vocals-30-000000.wav'` etc.
   find parts-30 -name "$STEM*" | sort -n | sed 's:\ :\\\ :g'| sed "s/^/file '/" | sed "s/$/'/" > concat.txt
 
-  # reassemble the full stem / create output
+  # Reassemble the full stem / create output.
   ffmpeg -f concat -safe 0 -i concat.txt -c copy $STEM.wav
 
   # clean up
@@ -261,7 +262,7 @@ killCracksAndCreateOutput drums
 killCracksAndCreateOutput piano
 killCracksAndCreateOutput other
 
-# fix the timestamps in the output, so the file won't be treated as malformed/corrupt/invalid if later importing to Audacity or other tool.
+# Fix the timestamps in the output, so the file won't be treated as malformed/corrupt/invalid if later importing to Audacity or other tool.
 # we presume to still be in the separated/"$NAME"/ directory here.
 fixTimestamps() {
   mv $1.wav $1_but_invalid_timestamps.wav
