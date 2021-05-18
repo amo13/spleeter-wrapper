@@ -191,6 +191,7 @@ ffmpeg -i "$FILE" -f segment -segment_time 30 -c copy "$NAME"-%03d.$EXT
 # Do the separation on the parts. Spleeter will here output WAV files, one for each stem (consuming a lot of hard drive space).
 # 5x: The 5x space of orig. file in WAV comes from the 5 stems.
 nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o separated
+# TODO: Potentially try adding spleeter options to output other format than WAV files ('spleeter separate -h' for help): -c mp3 -b 128k. WMA is supported but likely will not concat correctly.
 
 # Create separated/"$NAME"/vocals-30.wav, and similar for the other stems.
 # 5x2x: Temporarily uses 2x space of stems = $stems-30.wav, before the joined stems are created, and orig. stems deleted, so back to 5x space of orig. file in WAV.
