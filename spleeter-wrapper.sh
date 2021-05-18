@@ -119,23 +119,33 @@ joinParts () {
   printf "file '%s'\n" "${fileArrayVocals[@]}" > concat-list.txt
   # concatenate the parts, and create vocals-30.wav or vocals-offset.wav, to be used in killCracksAndCreateOutput() later.
   ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/vocals"$SPLITS".wav
+  # Convert back to orig. format, to not consume so much disk space going forward (during the second run of spleeter and joinParts).
+  # Might be lossy, if the original format $EXT is a lossy format. But keeping all intermedite files in WAV all the time would blow
+  # up the script disk space usage too much (possibly require many GB free HDD space with a long, 2h, audio file).
+  ffmpeg -i separated/"$NAME"/vocals"$SPLITS"{.wav,.$EXT}
+  rm separated/"$NAME"/vocals"$SPLITS".wav
 
   # Repeat the same concatenation process for the other stems:
   # drums
   printf "file '%s'\n" "${fileArrayDrums[@]}" > concat-list.txt # where > will overwrite file, not append
   ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/drums"$SPLITS".wav
-
+  ffmpeg -i separated/"$NAME"/drums"$SPLITS"{.wav,.$EXT}
+  rm separated/"$NAME"/drums"$SPLITS".wav
   # bass
   printf "file '%s'\n" "${fileArrayBass[@]}" > concat-list.txt
   ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/bass"$SPLITS".wav
-
+  ffmpeg -i separated/"$NAME"/bass"$SPLITS"{.wav,.$EXT}
+  rm separated/"$NAME"/bass"$SPLITS".wav
   # piano
   printf "file '%s'\n" "${fileArrayPiano[@]}" > concat-list.txt
   ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/piano"$SPLITS".wav
-
+  ffmpeg -i separated/"$NAME"/piano"$SPLITS"{.wav,.$EXT}
+  rm separated/"$NAME"/piano"$SPLITS".wav
   # other
   printf "file '%s'\n" "${fileArrayOther[@]}" > concat-list.txt
   ffmpeg -f concat -safe 0 -i concat-list.txt -c copy separated/"$NAME"/other"$SPLITS".wav
+  ffmpeg -i separated/"$NAME"/other"$SPLITS"{.wav,.$EXT}
+  rm separated/"$NAME"/other"$SPLITS".wav
 
   rm concat-list.txt
 
@@ -208,7 +218,7 @@ killCracksAndCreateOutput () {
 
   STEM="$1"
 
-  # failsafe - set to vocals if no stem is provided as argument
+  # Failsafe - set to vocals if no stem is provided as argument
   [ "$STEM" == "" ] && STEM="vocals"
 
   # Create temporary folders
@@ -219,29 +229,39 @@ killCracksAndCreateOutput () {
   # It's important that this is done on WAV files. Since some formats like WMA will
   # otherwise have pauses and corrupt duration when reassembled later.
   #
+  # Convert from original format to WAV, so it will split and concat correctly, regardless of input format (even WMA).
+  ffmpeg -i $STEM-30{.$EXT,.wav}
+  rm $STEM-30.$EXT
   # Logs: [segment @ 0x7ff0d0815200] Opening 'parts-30/vocals-30-000000.wav' for writing
   ffmpeg -i $STEM-30.wav -f segment -segment_time 1 -c copy parts-30/$STEM-30-%06d.wav
-  rm $STEM-30.wav # since multiple WAV files existing simultaneously would consume much HDD space
   # 5x2x2x: The space consumption will be at its highest at this point.
+  # rm, since multiple WAV files existing simultaneously would consume much HDD space going forward.
+  rm $STEM-30.wav
+
+  ffmpeg -i $STEM-offset{.$EXT,.wav}
+  rm $STEM-offset.$EXT
   # Logs: [segment @ 0x7fe6c4008200] Opening 'parts-offset/vocals-offset-000000.wav' for writing
   ffmpeg -i $STEM-offset.wav -f segment -segment_time 1 -c copy parts-offset/$STEM-offset-%06d.wav
   rm $STEM-offset.wav
 
-  # replace the 3 seconds around the cracks with the parts from the offset.
+  # Replace the 3 seconds around the cracks with the parts from the offset.
   cur=30 # the current second, since first clip ends at 30 sec
   curPad=$(printf "%06d" $cur)
-  # in the separated/"$NAME"/ folder:
-  while [ -f "parts-offset/$STEM-offset-$curPad.$EXT" ]; do
-    mv parts-offset/$STEM-offset-$curPad.$EXT parts-30/$STEM-30-$curPad.$EXT
+  # In the separated/"$NAME"/ folder:
+  while [ -f "parts-offset/$STEM-offset-$curPad.wav" ]; do
+    mv parts-offset/$STEM-offset-$curPad.wav parts-30/$STEM-30-$curPad.wav
     prev=$(( $cur - 1 ))
     prevPad=$(printf "%06d" $prev)
-    mv parts-offset/$STEM-offset-$prevPad.$EXT parts-30/$STEM-30-$prevPad.$EXT
+    mv parts-offset/$STEM-offset-$prevPad.wav parts-30/$STEM-30-$prevPad.wav
     next=$(( $cur + 1 ))
     nextPad=$(printf "%06d" $next)
-    mv parts-offset/$STEM-offset-$nextPad.$EXT parts-30/$STEM-30-$nextPad.$EXT
+    mv parts-offset/$STEM-offset-$nextPad.wav parts-30/$STEM-30-$nextPad.wav
     cur=$(( $cur + 30 ))
     curPad=$(printf "%06d" $cur)
   done
+
+  # Free up some space early
+  rm -r parts-offset
 
   # Create list of the parts, like `file 'parts-30/vocals-30-000000.wav'` etc.
   find parts-30 -name "$STEM*" | sort -n | sed 's:\ :\\\ :g'| sed "s/^/file '/" | sed "s/$/'/" > concat.txt
@@ -249,9 +269,12 @@ killCracksAndCreateOutput () {
   # Reassemble the full stem / create output.
   ffmpeg -f concat -safe 0 -i concat.txt -c copy $STEM.wav
 
-  # clean up
+  # Convert to orig format, to save space going forward
+  ffmpeg -i $STEM{.wav,.$EXT}
+  rm $STEM.wav
+
+  # Clean up rest
   rm -r parts-30
-  rm -r parts-offset
   rm concat.txt
 
 }
