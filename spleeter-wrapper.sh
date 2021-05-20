@@ -96,6 +96,8 @@ EXT=$(printf "$FILE" | awk -F . '{print $NF}')
 
 # Will join one stem presumed output by Spleeter.
 joinStem () {
+
+  local STEM SPLITS LOCAL_EXT FILE_ARRAY fileArrayStem
   STEM="$1" # e.g. "vocals"
   SPLITS="$2" # e.g. "-30" or "-offset"
   LOCAL_EXT="$3" # e.g. "m4a"
@@ -121,6 +123,7 @@ joinStem () {
 joinAllStems () {
 
   # first param is name to append to the split parts
+  local SPLITS LOCAL_EXT
   SPLITS="$1"
   LOCAL_EXT="$2"
   # Failsafe - set to 30 if no stem is provided as argument
@@ -134,13 +137,16 @@ joinAllStems () {
   OLDIFS=$IFS
   IFS=$'\n'
   # read all file names into an array, and ensure increasing order so stitched output will be correct
+  local fileArray
   fileArray=($(find $NAME-* -type f | sort -n | cut -f 1 -d '.'))
   # keep a copy of the list of files for cleanup later
+  local fileArrayWithExt
   fileArrayWithExt=($(find $NAME-* -type f | sort -n))
   # restore IFS to the original value (which is: space, tab, newline)
   IFS=$OLDIFS
 
   # prepend separated/ to each array element
+  local fileArray
   fileArray=("${fileArray[@]/#/separated/}")
 
   # Create vocals-30.m4a or vocals-offset.m4a, to be used in killCracksAndCreateOutput() later.
@@ -162,6 +168,8 @@ joinAllStems () {
 
 # Split the full audio file to 30s parts, by utilising a 15s offset during processing.
 offsetSplit () {
+
+  local LOCAL_EXT
   LOCAL_EXT="$1"
 
   # First split the audio in 15s parts.
@@ -170,6 +178,7 @@ offsetSplit () {
 
   # Then leave the first 15s clip as is (000).
   # Join the second (001) into the third clip (002), the fourth into the fifth, etc. so the resulting parts are 30s clips.
+  local cur curPad prev prevPad
   cur=2 # the current clip index, 0-indexed
   curPad=$(printf "%03d" $cur) # 002, third clip
   prev=$(( $cur - 1 ))
@@ -230,6 +239,7 @@ cd separated/"$NAME"
 # 5x2x2x: since 5x2x from before, plus both the 30-stems and the offset-stems are split into 1s fragments. After replacing, the offset-stems are deleted, so it's back to 5x2x
 killCracksAndCreateOutput () {
 
+  local STEM LOCAL_EXT
   STEM="$1"
   LOCAL_EXT="$2"
 
@@ -252,6 +262,7 @@ killCracksAndCreateOutput () {
   rm $STEM-offset.$LOCAL_EXT
 
   # Replace the 3 seconds around the cracks with the parts from the offset.
+  local cur curPad prev prevPad next nextPad
   cur=30 # the current second, since first clip ends at 30 sec
   curPad=$(printf "%06d" $cur)
   # In the separated/"$NAME"/ folder:
