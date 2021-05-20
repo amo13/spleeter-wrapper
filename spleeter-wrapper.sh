@@ -56,11 +56,6 @@
 #     to make it better.
 #     "
 #     From: https://github.com/deezer/spleeter/issues/437#issuecomment-652807569
-#
-#     TODO: "rather than doing the work of splitting up the input files, one can use the -s (aka --offset) option to the separate command.
-#                  This way, you can process a single file iteratively using spleeter, rather than splitting it up manually beforehand."
-#                   - @avindra, https://github.com/deezer/spleeter/issues/391#issuecomment-642986976
-#
 #     Disk space usage, at most: Size of original file when converted to WAV * # of stems * 2 (since -30 and -offsets) * 2 (under joinParts when splitting into 1s clips).
 #     So if an orig. 2h audio file in WAV is 669 MB, and we use spleeter with 5stems, then it would take 669 * 5 * 2 * 2 = 13380 MB = 13.38 GB disk space during processing.
 
@@ -186,6 +181,13 @@ offsetSplit () {
 
 # Split the orig. audio file into 30s parts
 ffmpeg -i "$FILE" -f segment -segment_time 30 -c copy "$NAME"-%03d.$EXT
+# TODO:
+# "Rather than doing the work of splitting up the input files, one can use the -s (aka --offset) option to the separate command.
+# This way, you can process a single file iteratively using spleeter, rather than splitting it up manually beforehand."
+# - @avindra, https://github.com/deezer/spleeter/issues/391#issuecomment-642986976
+# BUT:
+# This is not a very significant optimisation, since the if the input file is in a compressed format,
+# the split files will also be compressed, thus not consuming much disk space.
 
 # Do the separation on the parts. Spleeter will here output WAV files, one for each stem (consuming a lot of hard drive space).
 # 5x: The 5x space of orig. file in WAV comes from the 5 stems.
