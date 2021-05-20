@@ -6,7 +6,7 @@
 #     Original author:    Amaury Bodet
 #     Contributor(s):     Magne Matre Gåsland
 #
-#     License: GNU GPL v3 or later version. (See bottom of this file for entire license notice.)
+#     License: GNU GPL v3 or later version. (See bottom of this file for the license notice, and see the LICENSE file for the full license.)
 #
 #     Cracks are the reason the overlap correction in this script is needed:
 #     "
@@ -317,4 +317,6 @@ conda deactivate
 #
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#     See the file LICENSE for the full license.
 #     ---
