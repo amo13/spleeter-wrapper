@@ -70,7 +70,7 @@
 # activate anaconda / miniconda
 CONDA_PATH=$(conda info | grep -i 'base environment' | awk '{print $4}')
 # must use `source` since "Functions are not exported by default to be made available in subshells." https://github.com/conda/conda/issues/7980#issuecomment-441358406
-source $CONDA_PATH/etc/profile.d/conda.sh
+source "$CONDA_PATH/etc/profile.d/conda.sh"
 conda activate $MY_ENV # will also work if MY_ENV is not set.
 
 FILE="$1"
@@ -90,8 +90,8 @@ SPLEETER_OUT_EXT=$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]') # since spleet
 [ "$FILE" == "" ] && exit
 
 # remove extension, by using . as delimiter and select the 1st part (to the left).
-NAME=$(printf "$FILE" | cut -f 1 -d '.')
-EXT=$(printf "$FILE" | awk -F . '{print $NF}')
+NAME=$(printf "%s" "$FILE" | cut -f 1 -d '.')
+EXT=$(printf "%s" "$FILE" | awk -F . '{print $NF}')
 
 
 # Will join one stem presumed output by Spleeter.
@@ -106,7 +106,7 @@ joinStem () {
 
   # Append stem name and the extension spleeter outputs.
   # It will here be like: ("separated/filename-000/vocals.m4a", "separated/filename-001/vocals.m4a", ...)
-  fileArrayStem=("${FILE_ARRAY[@]/%//$STEM.$LOCAL_EXT}")
+  fileArrayStem=( ${FILE_ARRAY[@]/%//$STEM.$LOCAL_EXT} )
 
   # List all files to be joined in a file for ffmpeg to use as input list
   printf "file '%s'\n" "${fileArrayStem[@]}" > concat-orig.txt # where > will overwrite the file if it already exists.
@@ -138,16 +138,16 @@ joinAllStems () {
   IFS=$'\n'
   # read all file names into an array, and ensure increasing order so stitched output will be correct
   local fileArray
-  fileArray=($(find $NAME-* -type f | sort -n | cut -f 1 -d '.'))
+  fileArray=( $(find $NAME-* -type f | sort -n | cut -f 1 -d '.') ) # not using mapfile or readarray since not supported in Bash versions below v4.
   # keep a copy of the list of files for cleanup later
   local fileArrayWithExt
-  fileArrayWithExt=($(find $NAME-* -type f | sort -n))
+  fileArrayWithExt=( $(find $NAME-* -type f | sort -n) )
   # restore IFS to the original value (which is: space, tab, newline)
   IFS=$OLDIFS
 
   # prepend separated/ to each array element
   local fileArray
-  fileArray=("${fileArray[@]/#/separated/}")
+  fileArray=( ${fileArray[@]/#/separated/} )
 
   # Create vocals-30.m4a or vocals-offset.m4a, to be used in killCracksAndCreateOutput() later.
   joinStem vocals "$SPLITS" $LOCAL_EXT "${fileArray[@]}"
@@ -233,7 +233,7 @@ nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o se
 joinAllStems offset $SPLEETER_OUT_EXT
 
 
-cd separated/"$NAME"
+cd separated/"$NAME" || exit
 
 
 # 5x2x2x: since 5x2x from before, plus both the 30-stems and the offset-stems are split into 1s fragments. After replacing, the offset-stems are deleted, so it's back to 5x2x
@@ -308,7 +308,7 @@ conv_to_orig_format () {
   rm $STEM.$SPLEETER_OUT_EXT
 }
 # Convert the file back to the original format, if the original format was not the same as $SPLEETER_OUT_EXT.
-if [[ $EXT != $SPLEETER_OUT_EXT ]]; then
+if [[ "$EXT" != "$SPLEETER_OUT_EXT" ]]; then
   conv_to_orig_format vocals
   # conv_to_orig_format accompaniment # uncomment if spleeter is configured with 2stems, and comment out lines below
   conv_to_orig_format bass
