@@ -66,3 +66,36 @@ chunks for the rest. Then it takes 3s around the crack in the first
 processing from the second one, and puts everything back together.
 It's probably not ideal but maybe someone will have a good idea how
 to make it better.
+
+# Internal processing codecs supported (--process_codec)
+
+- `spleeter-wrapper.sh --process_codec` allows you to specify what codec the script should use internally, **to control HDD usage vs lossy/lossless encoding**.
+The script will then set `spleeter` to output each of the parts/segments in this codec, and also use the same codec when joining them.
+- Use `spleeter separate -h` to see currently available codecs.
+- It supports **WAV, MP3 and M4A** for the internal processing.
+- It is set to WAV by default. To preserve lossless processing and backwards compatibility. At the cost of more hard disk usage during processing.
+- So running with `--process_codec M4A` is recommended. Even though it is a lossy codec, it has good quality, and the difference would most often be inaudible.
+- You can still use `spleeter-wrapper.sh -f <file>` with any file extension (codec) that `ffmpeg` supports. Regardless of the internal `process_codec` used, the final output file will be converted to the same codec/extension that the input file had.
+
+`--process_codec` will set `SPLEETER_OUT_EXT` which is the file extension used during processing.
+
+## Disk space considerations: Beware of WAV
+
+Disk space usage, at most = Size of original file * amount of stems * 2 (since -30 and -offsets) * 2 (under joinAllStems() when splitting into 1s clips).
+Example:
+- 2h audio file of any format, which would take 669 MB when in WAV
+- Then it would take 669 * 5 * 2 * 2 = 13380 MB = 13.38 GB disk space during processing.
+
+So using `--process_codec M4A` is recommended.
+
+## Intentional limitations and considerations
+
+Spleeter itself supports outputting either: WAV, MP3, OGG, M4A, WMA, FLAC. In theory, when this script splits the audio file into parts, spleeter could output the parts in either of these codecs.
+But this script has disabled using WMA, FLAC, and OGG as intermediate formats during processing, for the following reasons:
+
+- WMA and FLAC: Could be concatenated by using `ffmpeg` with `complex_filter`. But would require extra func with 15-30 extra lines of code to maintain. See the `alt_concat_to_support_processing_with_wma_and_flac` branch, for a solution that works, but at the cost of being much slower, esp. on long audio files. When processing the 1s parts it would take ~1s to concat every part, times the nr of stems, making it infeasible for long audio clips (1-2h).
+- WMA: Normal concat would leave gaps. For lossy compression, M4A is just as good as WMA. So might as well use M4A internally for processing and concatenation.
+- FLAC: Normal concat will only play the first 35s of clip (possibly due to the fragment file headers not being stripped). The disk space usage with FLAC would be less than WAV, but M4A is even better, albeit lossy. FLAC could be useful if wanting optimal disk space usage with a lossless compression (while avoiding WAV).
+- OGG: To use it Spleeter requires `libvorbis` codec installed locally, which is not installed with ffmpeg by default. Must also be concated with ffmpeg's `concat:` protocol to avoid `unknown keyword 'OggS'` and `Invalid data found when processing input` errors. It will still give `failed to create or replace stream` error(s) undeway, but the output sounds intact.
+
+The above only concerns internal processing in spleeter-wrapper. It can still handle input files in all codecs that ffmpeg can handle - including WAV, MP3, OGG, M4A, WMA, FLAC - and will output to the same format as the input file.
