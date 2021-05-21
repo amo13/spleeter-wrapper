@@ -73,23 +73,155 @@ CONDA_PATH=$(conda info | grep -i 'base environment' | awk '{print $4}')
 source "$CONDA_PATH/etc/profile.d/conda.sh"
 conda activate $MY_ENV # will also work if MY_ENV is not set.
 
-FILE="$1"
+# -- Handle script input options
 
-# Intermittent file format, used during processing, to conserve disk space usage.
-#
-# The following has no bearing on the _final_ output file format. It will always be the same as the file format of the original input file, which the user sends in as the first param to this script.
+# Usage info
+show_help() {
+cat << EOF
+
+Usages:
+    bash ${0##*/} [FILE]
+    bash ${0##*/} [--stems INT] [--process_codec EXT] [--file FILE]
+    bash ${0##*/} [-s INT] [-p EXT] [-f FILE]
+
+Process the audio FILE and write the result to folder 'separate/FILE/'.
+When no FILE or when FILE is -, then reads standard input.
+
+    -h          Display this help and exit
+    -s | --stems INT   Set number of stems spleeter should output.
+                      Valid: 2, 4 or 5.
+                      Default: 5.
+    -p | --process_codec EXT    Set the codec/extension to be used (only) during processing.
+                              Valid: WAV, MP3, M4A.
+                              Default: WAV.
+                            Using a codec other than WAV can reduce disk space usage significantly,
+                            at the cost of lossy compression.
+    -f | --file FILE  The audio file to process. (e.g. "filename.mp3")
+
+EOF
+}
+
+die() {
+    printf '%s\n' "$1" >&2
+    exit 1
+}
+
+# Initialize all the option variables.
+# This ensures we are not contaminated by variables from the environment.
+FILE=
+TWO_STEMS=('vocals' 'accompaniment')
+FOUR_STEMS=('vocals' 'drums' 'bass' 'other')
+FIVE_STEMS=('vocals' 'drums' 'bass' 'piano' 'other')
+# defaults, if no --stems option is set:
+SPLEETER_STEMS=5stems
+STEM_NAMES=( "${FIVE_STEMS[@]}" )
+# SPLEETER_OUT_EXT is the intermittent file format, used during processing, to conserve disk space usage.
+# The following has no bearing on the _final_ output file format.
 # The user may specify the file format that Spleeter and this script should use for intermittent processing, which can have serious disk usage consequences (a lossless format like WAV would multiply disk space usage 10 times).
 #     Disk space usage, at most = Size of original file * amount of stems * 2 (since -30 and -offsets) * 2 (under joinAllStems when splitting into 1s clips).
 #     So if processing an orig. 2h WAV audio file taking 669 MB, and we use spleeter with 5stems and spleeter's default output WAV, then it would take 669 * 5 * 2 * 2 = 13380 MB = 13.38 GB disk space during processing.
 # At this time, Spleeter supports outputting either: WAV, MP3, OGG, M4A, WMA, FLAC. Use `spleeter separate -h` to see currently available formats.
-SPLEETER_OUT_EXT=$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]') # since spleeter only takes formats in lowercase
-# Set to WAV (Spleeter's default) if no format is specified to this script.
-[ "$SPLEETER_OUT_EXT" == "" ] && SPLEETER_OUT_EXT="wav" # lowercase required by spleeter
+# This script only supports internal processing using WAV, MP3, M4A, since the other formats cause various problems, documented below.
+# But the _final_ output file format will always be the same as the file format of the original input file, which the user sends in as the first param to this script.
+SPLEETER_OUT_EXT="wav" # wav since it is the spleeter default. Lowercase required by spleeter.
 
-# Failsafe - exit if no file is provided as argument
-[ "$FILE" == "" ] && exit
+# Failsafe guard - exit if no file is provided as argument
+if [[ $# -eq 0 ]]; then die 'ERROR: No parameters/options given to script. At least supply a file name of the audio file to process.'; fi
+# If one and only one parameter, and not the help command,
+# then assume it is the filename. For backwards compatibility.
+if [[ $# -eq 1 && $1 != "-h" && $1 != "--help" ]]; then
+  FILE="$1"
+else
+  # If more than 1 parameter, then assume options were input (in any order).
+  # The file then has to be specified with the -f option.
+  while test $# -gt 0; do
+    # test the first remaining param
+    case $1 in
+        (-h|-\?|--help)
+            show_help    # Display a usage synopsis.
+            exit
+            ;;
+        (-s|--stems)   # Spleeter supports 2, 4 or 5 stems.
+            if [ "$2" ]; then
+              # Set the array of stem names based on nr of stems
+              if [ $2 -eq 2 ]; then
+                STEM_NAMES=( "${TWO_STEMS[@]}" )
+                SPLEETER_STEMS="2stems"
+              elif [ $2 -eq 4 ]; then
+                STEM_NAMES=( "${FOUR_STEMS[@]}" )
+                SPLEETER_STEMS="4stems"
+              elif [ $2 -eq 5 ]; then
+                STEM_NAMES=( "${FIVE_STEMS[@]}" )
+                SPLEETER_STEMS="5stems"
+              fi
+            else
+                die 'ERROR: "-s" or "--stems" requires a non-empty option argument.'
+            fi
+            shift # remove the processed option name
+            ;;
+        (-p|--process_codec)
+            if [ "$2" ]; then
+              SPLEETER_OUT_EXT=$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]') # since spleeter only takes formats in lowercase
+              if [[
+                        $SPLEETER_OUT_EXT != "wav"
+                  && $SPLEETER_OUT_EXT != "mp3"
+                  # && $SPLEETER_OUT_EXT != "ogg" # requires libvorbis codec installed locally, which is not default
+                  && $SPLEETER_OUT_EXT != "m4a"
+                  # && $SPLEETER_OUT_EXT != "wma" # errors in concatenation
+                  # && $SPLEETER_OUT_EXT != "flac" # does not remove cracks properly
+                ]]; then
+                die 'ERROR: "-p" or "--process_codec" only supports either: WAV, MP3, M4A.'
+              fi
+            else
+              die 'ERROR: "-p" or "--process_codec" requires a non-empty option argument.'
+            fi
+            shift
+            ;;
+        (-f|--file)       # Takes an option argument; ensure it has been specified.
+            if [ "$2" ]; then
+                FILE=$2
+            else
+                die 'ERROR: "-f" or "--file" requires a non-empty option argument.'
+            fi
+            shift
+            ;;
+        (--file=?*)
+            FILE=${1#*=} # Delete everything up to "=" and assign the remainder.
+            # no shift here, so it works even if --file= comes before other options
+            ;;
+        (--file=)         # Handle the case of an empty --file=
+            die 'ERROR: "--file=" requires a non-empty option argument.'
+            ;;
+        (--)              # End of all options.
+            shift
+            break
+            ;;
+        (-?*)
+            printf 'WARN: Unknown option (ignored): %s\n' "$1. Did you forget to use double dash before a long option name?" >&2
+            ;;
+        (*)               # Default case: No more options, so break out of the loop.
+            break
+    esac
+    shift # remove the processed option value (before continuing the while loop)
+  done
+fi
 
-# remove extension, by using . as delimiter and select the 1st part (to the left).
+if [ "$FILE" == "" ]; then
+  die 'ERROR: Empty FILE parameter. Did you forget to add the -f option specifier in front of the filename when running the script with several options?'
+fi
+
+echo "FILE:"
+echo "${FILE}"
+echo "SPLEETER_STEMS:"
+echo "$SPLEETER_STEMS"
+echo "STEM_NAMES:"
+echo "${STEM_NAMES[@]}"
+echo "SPLEETER_OUT_EXT:"
+echo "$SPLEETER_OUT_EXT"
+
+# --- End of handling script input options
+
+# Remove extension, by using . as delimiter and select the 1st part (to the left).
 NAME=$(printf "%s" "$FILE" | cut -f 1 -d '.')
 EXT=$(printf "%s" "$FILE" | awk -F . '{print $NF}')
 
@@ -148,12 +280,9 @@ joinAllStems () {
   fileArray=( ${fileArray[@]/#/separated/} )
 
   # Create vocals-30.m4a or vocals-offset.m4a, to be used in killCracksAndCreateOutput() later.
-  joinStem vocals "$SPLITS" $LOCAL_EXT "${fileArray[@]}"
-  #joinStem accompaniment "$SPLITS" $LOCAL_EXT "${fileArray[@]}" # uncomment if spleeter is configured with 2stems, and comment out lines below
-  joinStem drums "$SPLITS" $LOCAL_EXT "${fileArray[@]}"
-  joinStem bass "$SPLITS" $LOCAL_EXT "${fileArray[@]}"
-  joinStem piano "$SPLITS" $LOCAL_EXT "${fileArray[@]}"
-  joinStem other "$SPLITS" $LOCAL_EXT "${fileArray[@]}"
+  for stem_name in "${STEM_NAMES[@]}"; do
+    joinStem $stem_name "$SPLITS" $LOCAL_EXT "${fileArray[@]}"
+  done
 
   OLDIFS=$IFS
   IFS=$'\n'
@@ -208,7 +337,7 @@ ffmpeg -i "$FILE" -f segment -segment_time 30 -c copy "$NAME"-%03d.$EXT
 
 # Do the separation on the parts.
 # 5x: The 5x space of orig. file in M4A comes from the 5 stems.
-nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o separated -c $SPLEETER_OUT_EXT
+nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:$SPLEETER_STEMS -B tensorflow -o separated -c $SPLEETER_OUT_EXT
 
 # Create separated/"$NAME"/vocals-30.m4a, and similar for the other stems.
 # 5x2x: Temporarily uses 2x space of stems = $stems-30.m4a, before the joined stems are created, and orig. stems deleted, so back to 5x space of orig. file in M4A.
@@ -224,7 +353,7 @@ offsetSplit $EXT
 
 # Do the separation on the parts (which are now the split offsets of the orig. audio file).
 # 5x2x: 5x space of orig. file in M4A (old stems: vocals-30.m4a etc.) + 5x space of orig. file in M4A (new stems).
-nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:5stems -B tensorflow -o separated -c $SPLEETER_OUT_EXT
+nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:$SPLEETER_STEMS -B tensorflow -o separated -c $SPLEETER_OUT_EXT
 
 # Create `separated/"$NAME"/vocals-offset.m4a`, and similar for the other stems.
 # 5x2x2x: temporarily 2x space of new stems = $stems-offset.m4a (5x2x2x), when joined stems created, before orig. stems deleted, then back to: 5x2x
@@ -293,11 +422,9 @@ killCracksAndCreateOutput () {
 }
 
 
-killCracksAndCreateOutput vocals $SPLEETER_OUT_EXT
-killCracksAndCreateOutput bass $SPLEETER_OUT_EXT
-killCracksAndCreateOutput drums $SPLEETER_OUT_EXT
-killCracksAndCreateOutput piano $SPLEETER_OUT_EXT
-killCracksAndCreateOutput other $SPLEETER_OUT_EXT
+for stem_name in "${STEM_NAMES[@]}"; do
+  killCracksAndCreateOutput $stem_name $SPLEETER_OUT_EXT
+done
 
 
 conv_to_orig_format () {
@@ -307,12 +434,9 @@ conv_to_orig_format () {
 }
 # Convert the file back to the original format, if the original format was not the same as $SPLEETER_OUT_EXT.
 if [[ "$EXT" != "$SPLEETER_OUT_EXT" ]]; then
-  conv_to_orig_format vocals
-  # conv_to_orig_format accompaniment # uncomment if spleeter is configured with 2stems, and comment out lines below
-  conv_to_orig_format bass
-  conv_to_orig_format drums
-  conv_to_orig_format piano
-  conv_to_orig_format other
+  for stem_name in "${STEM_NAMES[@]}"; do
+    conv_to_orig_format $stem_name
+  done
 fi
 
 
@@ -320,17 +444,15 @@ fi
 # We presume to still be in the separated/"$NAME"/ directory here.
 fixTimestamps () {
   LOCAL_EXT="$2"
-  mv $1.$LOCAL_EXT $1_but_invalid_timestamps.$LOCAL_EXT
+  STEM="$1"
+  mv $STEM.$LOCAL_EXT ${STEM}_but_invalid_timestamps.$LOCAL_EXT
   # Recreate timestamps without re-encoding, to preserve quality.
-  ffmpeg -vsync drop -i $1_but_invalid_timestamps.$LOCAL_EXT -map 0:a? -acodec copy $1.$LOCAL_EXT
-  rm $1_but_invalid_timestamps.$LOCAL_EXT
+  ffmpeg -vsync drop -i ${STEM}_but_invalid_timestamps.$LOCAL_EXT -map 0:a? -acodec copy $STEM.$LOCAL_EXT
+  rm ${STEM}_but_invalid_timestamps.$LOCAL_EXT
 }
-
-fixTimestamps vocals $EXT
-fixTimestamps bass $EXT
-fixTimestamps drums $EXT
-fixTimestamps piano $EXT
-fixTimestamps other $EXT
+for stem_name in "${STEM_NAMES[@]}"; do
+  fixTimestamps $stem_name $EXT
+done
 
 
 # deactivate anaconda / miniconda
