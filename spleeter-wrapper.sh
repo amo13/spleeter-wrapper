@@ -10,13 +10,14 @@
 #
 #     Example usage:
 #
+#         `bash spleeter-wrapper.sh --help`
 #         `bash spleeter-wrapper.sh filename.mp3`
-#         `bash spleeter-wrapper.sh filename.wma M4A`
+#         `bash spleeter-wrapper.sh filename.wma --stems 2 --process_codec M4A`
 #
-#     Second param to script specifies a specific format/extension to use with Spleeter while processing.
-#     Spleeter supports WAV, MP3, OGG, M4A, WMA, FLAC.
-#     M4A is recommended, since it will considerably reduce the disk space used/needed during processing, compared to WAV.
-#     Spleeter uses WAV by default, so this script does that too if no second param is specified.
+#     By default (if no options supplied) the script will use Spleeter to output
+#     5 stems and will use WAV codec (lossless) during processing.
+#     But the final output files will be returned in the same codec/extension
+#     as the audio file input to the script.
 #
 #     Cracks are the reason the overlap correction in this script is needed:
 #     "
