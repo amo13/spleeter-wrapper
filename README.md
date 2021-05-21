@@ -5,11 +5,11 @@ But also gives the option to process using WAV files, to get a fully lossless re
 
 Originated in a [discussion](https://github.com/deezer/spleeter/issues/437#issuecomment-652807569) on the official spleeter repository.
 
-# Example usage:
+# Example usages:
 
-        `bash spleeter-wrapper.sh --help`
-        `bash spleeter-wrapper.sh filename.mp3`
-        `bash spleeter-wrapper.sh filename.wma --stems 2 --process_codec M4A`
+    bash spleeter-wrapper.sh --help
+    bash spleeter-wrapper.sh filename.mp3
+    bash spleeter-wrapper.sh filename.wma --stems 2 --process_codec M4A
 
 By default (if no options supplied) the script will use Spleeter to output
 5 stems and will use WAV codec (lossless) during processing.
@@ -19,7 +19,7 @@ as the audio file input to the script.
 # How
 
 - Splits the original file, runs Spleeter on the parts, then joins/concatenates the parts.
-- Removes the padding that Spleeter adds, which would otherwise be heard as cracks in the joined output audio file.
+- Removes the padding that Spleeter adds to each part, which would otherwise be heard as cracks in the joined output audio file.
 
 ## Why does spleeter add the padding/cracks?
 
