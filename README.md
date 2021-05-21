@@ -1,7 +1,7 @@
 # spleeter-wrapper
 
 A script for using spleeter with audio files of any length, and with limited RAM and HDD space.
-But also gives the option to process using WAV files, to get a fully lossless result, at the cost of using more HDD space during processing.
+But also gives the option to decide what codec to use for processing, to control HDD usage vs lossy/lossless encoding.
 
 Originated in a [discussion](https://github.com/deezer/spleeter/issues/437#issuecomment-652807569) on the official spleeter repository.
 
