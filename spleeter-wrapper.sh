@@ -315,7 +315,7 @@ offsetSplit () {
   prevPad=$(printf "%03d" $prev)
   # In the root folder:
   while [ -f "$NAME-$curPad.$LOCAL_EXT" ]; do
-    # Correctly concat all file types, also WAV (where each file has a 46 byte file header if made with ffmpeg)
+    # Use filter (instead of concat protocol) to correctly concat all file types, also M4A, WMA, and WAV (where each file has a 46 byte file header if made with ffmpeg).
     ffmpeg -i "$NAME-$prevPad.$LOCAL_EXT" -i "$NAME-$curPad.$LOCAL_EXT" -filter_complex '[0:0][1:0]concat=n=2:v=0:a=1[out]' -map '[out]' tmp.$LOCAL_EXT
     rm "$NAME"-$curPad.$LOCAL_EXT
     rm "$NAME"-$prevPad.$LOCAL_EXT
