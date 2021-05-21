@@ -63,14 +63,7 @@ FIVE_STEMS=('vocals' 'drums' 'bass' 'piano' 'other')
 # defaults, if no --stems option is set:
 SPLEETER_STEMS=5stems
 STEM_NAMES=( "${FIVE_STEMS[@]}" )
-# SPLEETER_OUT_EXT is the intermittent file format, used during processing, to conserve disk space usage.
-# The following has no bearing on the _final_ output file format.
-# The user may specify the file format that Spleeter and this script should use for intermittent processing, which can have serious disk usage consequences (a lossless format like WAV would multiply disk space usage 10 times).
-#     Disk space usage, at most = Size of original file * amount of stems * 2 (since -30 and -offsets) * 2 (under joinAllStems when splitting into 1s clips).
-#     So if processing an orig. 2h WAV audio file taking 669 MB, and we use spleeter with 5stems and spleeter's default output WAV, then it would take 669 * 5 * 2 * 2 = 13380 MB = 13.38 GB disk space during processing.
-# At this time, Spleeter supports outputting either: WAV, MP3, OGG, M4A, WMA, FLAC. Use `spleeter separate -h` to see currently available formats.
-# This script only supports internal processing using WAV, MP3, M4A, since the other formats cause various problems, documented below.
-# But the _final_ output file format will always be the same as the file format of the original input file, which the user sends in as the first param to this script.
+# default, if no --process_codec option is set:
 SPLEETER_OUT_EXT="wav" # wav since it is the spleeter default. Lowercase required by spleeter.
 
 # Failsafe guard - exit if no file is provided as argument
