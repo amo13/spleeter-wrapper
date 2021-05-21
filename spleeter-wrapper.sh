@@ -87,15 +87,15 @@ Usages:
 Process the audio FILE and write the result to folder 'separate/FILE/'.
 When no FILE or when FILE is -, then reads standard input.
 
-    -h          Display this help and exit
+    -h | --help       Display this help and exit
     -s | --stems INT   Set number of stems spleeter should output.
-                      Valid: 2, 4 or 5.
-                      Default: 5.
+                          Valid: 2, 4 or 5.
+                          Default: 5.
     -p | --process_codec EXT    Set the codec/extension to be used (only) during processing.
-                              Valid: WAV, MP3, M4A.
-                              Default: WAV.
-                            Using a codec other than WAV can reduce disk space usage significantly,
-                            at the cost of lossy compression.
+                                  Valid: WAV, MP3, M4A.
+                                  Default: WAV.
+                                Using a codec other than WAV can reduce disk space usage significantly,
+                                at the cost of lossy compression.
     -f | --file FILE  The audio file to process. (e.g. "filename.mp3")
 
 EOF
