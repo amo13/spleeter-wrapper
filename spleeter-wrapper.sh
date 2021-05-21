@@ -224,6 +224,9 @@ echo "$SPLEETER_OUT_EXT"
 # Remove extension, by using . as delimiter and select the 1st part (to the left).
 NAME=$(printf "%s" "$FILE" | cut -f 1 -d '.')
 EXT=$(printf "%s" "$FILE" | awk -F . '{print $NF}')
+echo "Final output EXT:"
+echo "$EXT"
+
 
 
 # Will join one stem presumed output by Spleeter.
