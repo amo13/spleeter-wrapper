@@ -106,7 +106,7 @@ joinStem () {
 
   # Append stem name and the extension spleeter outputs.
   # It will here be like: ("separated/filename-000/vocals.m4a", "separated/filename-001/vocals.m4a", ...)
-  fileArrayStem=( ${FILE_ARRAY[@]/%//$STEM.$LOCAL_EXT} )
+  fileArrayStem=( ${FILE_ARRAY[@]/%//$STEM.$LOCAL_EXT} ) # not using readarray/mapfile since not in Bash below v4.
 
   # List all files to be joined in a file for ffmpeg to use as input list
   printf "file '%s'\n" "${fileArrayStem[@]}" > concat-orig.txt # where > will overwrite the file if it already exists.
@@ -122,8 +122,8 @@ joinStem () {
 # Will join all the stems presumed output by Spleeter.
 joinAllStems () {
 
-  # first param is name to append to the split parts
   local SPLITS LOCAL_EXT
+  # first param is name to append to the split parts
   SPLITS="$1"
   LOCAL_EXT="$2"
   # Failsafe - set to 30 if no stem is provided as argument
@@ -133,20 +133,18 @@ joinAllStems () {
   # create output folder
   mkdir -p separated/"$NAME"
 
+  local fileArray fileArrayWithExt
   # save and change Internal Field Separator (IFS) which says where to split strings into array items
   OLDIFS=$IFS
   IFS=$'\n'
   # read all file names into an array, and ensure increasing order so stitched output will be correct
-  local fileArray
   fileArray=( $(find $NAME-* -type f | sort -n | cut -f 1 -d '.') ) # not using mapfile or readarray since not supported in Bash versions below v4.
   # keep a copy of the list of files for cleanup later
-  local fileArrayWithExt
   fileArrayWithExt=( $(find $NAME-* -type f | sort -n) )
   # restore IFS to the original value (which is: space, tab, newline)
   IFS=$OLDIFS
 
   # prepend separated/ to each array element
-  local fileArray
   fileArray=( ${fileArray[@]/#/separated/} )
 
   # Create vocals-30.m4a or vocals-offset.m4a, to be used in killCracksAndCreateOutput() later.
