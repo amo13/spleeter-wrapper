@@ -1,22 +1,33 @@
 # spleeter-wrapper
 
-A script for using spleeter with audio files of any length, and with limited RAM and HDD space.
-But also gives the option to decide what codec to use for processing, to control HDD usage vs lossy/lossless encoding.
+[Spleeter](https://github.com/deezer/spleeter) is a library that uses AI/ML to extract distinct sounds/instruments (called stems) from an audio file.
+It is intended to be used to separate vocals and instruments in a song. But it can also be used to extract only the voice from a noisy background in an audio recording (for example a lecture).
 
-Originated in a [discussion](https://github.com/deezer/spleeter/issues/437#issuecomment-652807569) on the official spleeter repository.
+spleeter-wrapper is a bash shell/terminal script for using Spleeter with audio files of any length, and with limited RAM and HDD space.
+This is especially important for long (1-2 hour) audio recordings. It also gives the option to decide what codec to use for processing, to control HDD usage vs lossy/lossless encoding.
 
-# Example usages:
+`spleeter-wrapper.sh` originated in a [discussion](https://github.com/deezer/spleeter/issues/437#issuecomment-652807569) on the official spleeter repository, and was previously called `separate-overlap.sh`.
+
+# Example usages
+
+Use either command in your terminal:
 
     bash spleeter-wrapper.sh --help
     bash spleeter-wrapper.sh filename.mp3
     bash spleeter-wrapper.sh filename.wma --stems 2 --process_codec M4A
 
-By default (if no options supplied) the script will use Spleeter to output
-5 stems and will use WAV codec (lossless) during processing.
-But the final output files will be returned in the same codec/extension
-as the audio file input to the script.
+## Defaults
 
-# How
+- `--stems 5`
+- `--process_codec WAV`
+
+These options are supplied by default, so if wanting these, no options need to be supplied.
+
+You likely want to use `--process_codec M4A` if you want to preserve much HDD space usage during processing, at the cost of the Spleeter output being in this lossy compression.
+
+Regardless, the final output files will be returned in the same codec/extension as the audio file input to the script.
+
+# How spleeter-wrapper works
 
 - Splits the original file, runs Spleeter on the parts, then joins/concatenates the parts.
 - Removes the padding that Spleeter adds to each part, which would otherwise be heard as cracks in the joined output audio file.
@@ -67,6 +78,14 @@ processing from the second one, and puts everything back together.
 It's probably not ideal but maybe someone will have a good idea how
 to make it better.
 
+# Stem separation (--stems)
+
+Example: `bash spleeter-wrapper --stems 4`
+
+- 2 stems gives output: vocals / accompaniment
+- 4 stems gives output: vocals / drums / bass / other
+- 5 stems gives output: vocals / drums / bass / piano / other
+
 # Internal processing codecs supported (--process_codec)
 
 - `spleeter-wrapper.sh --process_codec` allows you to specify what codec the script should use internally, **to control HDD usage vs lossy/lossless encoding**.
@@ -82,11 +101,12 @@ The script will then set `spleeter` to output each of the parts/segments in this
 ## Disk space considerations: Beware of WAV
 
 Disk space usage, at most = Size of original file * amount of stems * 2 (since -30 and -offsets) * 2 (under joinAllStems() when splitting into 1s clips).
-Example:
-- 2h audio file of any format, which would take 669 MB when in WAV
-- Then it would take 669 * 5 * 2 * 2 = 13380 MB = 13.38 GB disk space during processing.
 
-So using `--process_codec M4A` is recommended.
+Example:
+- 2h audio file of any format, but which would take 669 MB when in WAV.
+- Then with 5 stems it would take 669 * 5 * 2 * 2 = 13380 MB = **13.38 GB** disk space during processing.
+
+So using `--process_codec M4A` is recommended. It would reduce disk space usage to a minimum. Also don't run with more stems than you need, to save time and space.
 
 ## Intentional limitations and considerations
 
