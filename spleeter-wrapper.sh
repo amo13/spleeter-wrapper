@@ -12,7 +12,7 @@
 #
 #         `bash spleeter-wrapper.sh --help`
 #         `bash spleeter-wrapper.sh filename.mp3`
-#         `bash spleeter-wrapper.sh filename.wma --stems 2 --process_codec M4A`
+#         `bash spleeter-wrapper.sh filename.wma --stems 5 --process_codec WAV`
 #
 
 # activate anaconda / miniconda
@@ -61,10 +61,10 @@ TWO_STEMS=('vocals' 'accompaniment')
 FOUR_STEMS=('vocals' 'drums' 'bass' 'other')
 FIVE_STEMS=('vocals' 'drums' 'bass' 'piano' 'other')
 # defaults, if no --stems option is set:
-SPLEETER_STEMS=5stems
-STEM_NAMES=( "${FIVE_STEMS[@]}" )
+SPLEETER_STEMS=2stems
+STEM_NAMES=( "${TWO_STEMS[@]}" )
 # default, if no --process_codec option is set:
-SPLEETER_OUT_EXT="wav" # wav since it is the spleeter default. Lowercase required by spleeter.
+SPLEETER_OUT_EXT="m4a" # wav since it is the spleeter default. Lowercase required by spleeter.
 
 # Failsafe guard - exit if no file is provided as argument
 if [[ $# -eq 0 ]]; then die 'ERROR: No parameters/options given to script. At least supply a file name of the audio file to process.'; fi

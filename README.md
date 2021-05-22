@@ -14,7 +14,7 @@ Use either command in your terminal:
 
     bash spleeter-wrapper.sh --help
     bash spleeter-wrapper.sh filename.mp3
-    bash spleeter-wrapper.sh filename.wma --stems 2 --process_codec M4A
+    bash spleeter-wrapper.sh filename.wma --stems 5 --process_codec WAV
 
 ## Defaults
 
