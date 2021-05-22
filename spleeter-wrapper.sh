@@ -182,7 +182,7 @@ joinStem () {
 
   # Append stem name and the extension spleeter outputs.
   # It will here be like: ("separated/filename-000/vocals.m4a", "separated/filename-001/vocals.m4a", ...)
-  fileArrayStem=( ${FILE_ARRAY[@]/%//$STEM.$LOCAL_EXT} ) # not using readarray/mapfile since not in Bash below v4.
+  fileArrayStem=( "${FILE_ARRAY[@]/%//$STEM.$LOCAL_EXT}" ) # not using readarray/mapfile since not in Bash below v4.
 
   # List all files to be joined in a file for ffmpeg to use as input list
   printf "file '%s'\n" "${fileArrayStem[@]}" > concat-orig.txt # where > will overwrite the file if it already exists.
@@ -221,7 +221,7 @@ joinAllStems () {
   IFS=$OLDIFS
 
   # prepend separated/ to each array element
-  fileArray=( ${fileArray[@]/#/separated/} )
+  fileArray=( "${fileArray[@]/#/separated/}" )
 
   # Create vocals-30.m4a or vocals-offset.m4a, to be used in killCracksAndCreateOutput() later.
   for stem_name in "${STEM_NAMES[@]}"; do
