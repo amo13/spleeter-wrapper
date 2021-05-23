@@ -18,12 +18,12 @@ Use either command in your terminal:
 
 ## Defaults
 
-- `--stems 5`
-- `--process_codec WAV`
+- `--stems 2`
+- `--process_codec M4A`
 
 These options are supplied by default, so if wanting these, no options need to be supplied.
 
-You likely want to use `--process_codec M4A` if you want to preserve much HDD space usage during processing, at the cost of the Spleeter output being in this lossy compression.
+You might want to use `--process_codec WAV` if you want to preserve lossless output from Spleeter, at the expense of needing much more HDD space during processing.
 
 Regardless, the final output files will be returned in the same codec/extension as the audio file input to the script.
 
@@ -106,7 +106,7 @@ Example:
 - 2h audio file of any format, but which would take 669 MB when in WAV.
 - Then with 5 stems it would take 669 * 5 * 2 * 2 = 13380 MB = **13.38 GB** disk space during processing.
 
-So using `--process_codec M4A` is recommended. It would reduce disk space usage to a minimum. Also don't run with more stems than you need, to save time and space.
+So using M4A as the process codec is recommended. It reduces disk space usage to a minimum. Also don't run with more stems than you need, to save time and space.
 
 ## Intentional limitations and considerations
 
