@@ -18,14 +18,27 @@ Use either command in your terminal:
 
 ## Defaults
 
-- `--stems 5`
-- `--process_codec WAV`
+- `--stems 2`
+- `--process_codec M4A`
 
 These options are supplied by default, so if wanting these, no options need to be supplied.
 
-You likely want to use `--process_codec M4A` if you want to preserve much HDD space usage during processing, at the cost of the Spleeter output being in this lossy compression.
+You might want to use `--process_codec WAV` if you want to preserve lossless output from Spleeter, at the expense of needing much more HDD space during processing.
 
-Regardless, the final output files will be returned in the same codec/extension as the audio file input to the script.
+Regardless, the _final output files_ will be returned in the same codec/extension as the audio file input to the script. If you send `filename.mp3` in, you get `vocals.mp3` etc. out.
+
+You might not care about preserving a lossless compression during processing, but still want the output file in WAV. Maybe for further processing in tools such as [Audacity](https://www.audacityteam.org/).
+If so, then it is recommended to use M4A during processing, but simply convert the output file afterwards, by running `ffmpeg -i vocals.mp3 vocals.wav`.
+To avoid having to use WAV as the `--process_codec`, which would take extra time, and could take a lot of HDD space.
+
+## Run time
+
+One example: A 2 hour audio file took about 25 min to process, using 2 stems and M4A as the process codec.
+The file was originally 31 MB in WMA format, and each stem ('vocals', etc.) was returned as a 130.6 MB file in WMA format.
+Taking about 260 MB disk space as the end result (after the system cache was cleared).
+During processing, however, the script consumed about 800 MB disk space.
+
+In another case, with the same settings, a 1 hour clip took 15 min to process.
 
 # How spleeter-wrapper works
 
@@ -106,7 +119,7 @@ Example:
 - 2h audio file of any format, but which would take 669 MB when in WAV.
 - Then with 5 stems it would take 669 * 5 * 2 * 2 = 13380 MB = **13.38 GB** disk space during processing.
 
-So using `--process_codec M4A` is recommended. It would reduce disk space usage to a minimum. Also don't run with more stems than you need, to save time and space.
+So using M4A as the process codec is recommended. It reduces disk space usage to a minimum. Also don't run with more stems than you need, to save time and space.
 
 ## Intentional limitations and considerations
 
