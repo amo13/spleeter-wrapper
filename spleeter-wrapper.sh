@@ -271,16 +271,6 @@ offsetSplit () {
 
 # Split the orig. audio input file into 30s parts, keeping the original format/extension.
 ffmpeg -i "$FILE" -f segment -segment_time 30 -c copy "$NAME"-%03d.$EXT
-# TODO:
-# "Rather than doing the work of splitting up the input files, one can use the -s (aka --offset) option to the separate command.
-# This way, you can process a single file iteratively using spleeter, rather than splitting it up manually beforehand."
-# - @avindra, https://github.com/deezer/spleeter/issues/391#issuecomment-642986976
-# BUT:
-# This is not a very significant optimisation, since the if the input file is in a compressed format,
-# the split files will also be compressed, thus not consuming much disk space.
-# Also, the "separate command builds the model each time it is called" and Spleeter recommends batch processing using a single call:
-# "If you have several files to separate, it is then recommended to perform all separation with a single call to separate"
-# https://github.com/deezer/spleeter/wiki/2.-Getting-started#batch-processing
 
 # Do the separation on the parts.
 # 5x: The 5x space of orig. file in M4A comes from the 5 stems.
