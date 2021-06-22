@@ -23,6 +23,18 @@ conda activate $MY_ENV # will also work if MY_ENV is not set.
 
 # -- Handle script input options
 
+# Initialize all the option variables.
+# This ensures we are not contaminated by variables from the environment.
+FILE=
+TWO_STEMS=('vocals' 'accompaniment')
+FOUR_STEMS=('vocals' 'drums' 'bass' 'other')
+FIVE_STEMS=('vocals' 'drums' 'bass' 'piano' 'other')
+# defaults, if no --stems option is set:
+SPLEETER_STEMS=2stems
+STEM_NAMES=( "${TWO_STEMS[@]}" )
+# default, if no --process_codec option is set:
+SPLEETER_OUT_EXT="m4a" # wav since it is the spleeter default. Lowercase required by spleeter.
+
 # Usage info
 show_help() {
 cat << EOF
@@ -38,10 +50,10 @@ When no FILE or when FILE is -, then reads standard input.
     -h | --help       Display this help and exit
     -s | --stems INT   Set number of stems spleeter should output.
                           Valid: 2, 4 or 5.
-                          Default: 5.
+                          Default: ${SPLEETER_STEMS%"stems"}.
     -p | --process_codec EXT    Set the codec/extension to be used (only) during processing.
                                   Valid: WAV, MP3, M4A.
-                                  Default: WAV.
+                                  Default: $(echo $SPLEETER_OUT_EXT | tr [:lower:] [:upper:]).
                                 Using a codec other than WAV can reduce disk space usage significantly,
                                 at the cost of lossy compression.
     -f | --file FILE  The audio file to process. (e.g. "filename.mp3")
@@ -53,18 +65,6 @@ die() {
     printf '%s\n' "$1" >&2
     exit 1
 }
-
-# Initialize all the option variables.
-# This ensures we are not contaminated by variables from the environment.
-FILE=
-TWO_STEMS=('vocals' 'accompaniment')
-FOUR_STEMS=('vocals' 'drums' 'bass' 'other')
-FIVE_STEMS=('vocals' 'drums' 'bass' 'piano' 'other')
-# defaults, if no --stems option is set:
-SPLEETER_STEMS=2stems
-STEM_NAMES=( "${TWO_STEMS[@]}" )
-# default, if no --process_codec option is set:
-SPLEETER_OUT_EXT="m4a" # wav since it is the spleeter default. Lowercase required by spleeter.
 
 # Failsafe guard - exit if no file is provided as argument
 if [[ $# -eq 0 ]]; then die 'ERROR: No parameters/options given to script. At least supply a file name of the audio file to process.'; fi
