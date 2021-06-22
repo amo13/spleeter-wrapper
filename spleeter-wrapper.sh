@@ -23,6 +23,18 @@ conda activate $MY_ENV # will also work if MY_ENV is not set.
 
 # -- Handle script input options
 
+# Initialize all the option variables.
+# This ensures we are not contaminated by variables from the environment.
+FILE=
+TWO_STEMS=('vocals' 'accompaniment')
+FOUR_STEMS=('vocals' 'drums' 'bass' 'other')
+FIVE_STEMS=('vocals' 'drums' 'bass' 'piano' 'other')
+# defaults, if no --stems option is set:
+SPLEETER_STEMS=2stems
+STEM_NAMES=( "${TWO_STEMS[@]}" )
+# default, if no --process_codec option is set:
+SPLEETER_OUT_EXT="m4a" # wav since it is the spleeter default. Lowercase required by spleeter.
+
 # Usage info
 show_help() {
 cat << EOF
@@ -38,10 +50,10 @@ When no FILE or when FILE is -, then reads standard input.
     -h | --help       Display this help and exit
     -s | --stems INT   Set number of stems spleeter should output.
                           Valid: 2, 4 or 5.
-                          Default: 5.
+                          Default: ${SPLEETER_STEMS%"stems"}.
     -p | --process_codec EXT    Set the codec/extension to be used (only) during processing.
                                   Valid: WAV, MP3, M4A.
-                                  Default: WAV.
+                                  Default: $(echo $SPLEETER_OUT_EXT | tr [:lower:] [:upper:]).
                                 Using a codec other than WAV can reduce disk space usage significantly,
                                 at the cost of lossy compression.
     -f | --file FILE  The audio file to process. (e.g. "filename.mp3")
@@ -53,18 +65,6 @@ die() {
     printf '%s\n' "$1" >&2
     exit 1
 }
-
-# Initialize all the option variables.
-# This ensures we are not contaminated by variables from the environment.
-FILE=
-TWO_STEMS=('vocals' 'accompaniment')
-FOUR_STEMS=('vocals' 'drums' 'bass' 'other')
-FIVE_STEMS=('vocals' 'drums' 'bass' 'piano' 'other')
-# defaults, if no --stems option is set:
-SPLEETER_STEMS=2stems
-STEM_NAMES=( "${TWO_STEMS[@]}" )
-# default, if no --process_codec option is set:
-SPLEETER_OUT_EXT="m4a" # wav since it is the spleeter default. Lowercase required by spleeter.
 
 # Failsafe guard - exit if no file is provided as argument
 if [[ $# -eq 0 ]]; then die 'ERROR: No parameters/options given to script. At least supply a file name of the audio file to process.'; fi
@@ -240,12 +240,12 @@ joinAllStems () {
 # Split the full audio file to 30s parts, by utilising a 15s offset during processing.
 offsetSplit () {
 
-  local LOCAL_EXT
-  LOCAL_EXT="$1"
+  local NAME LOCAL_EXT
+  NAME="$1"
+  LOCAL_EXT="$2"
 
   # First split the audio in 15s parts.
-  # Can be done on original file format, since later only concatenating two and two parts, using filter_complex.
-  ffmpeg -i "$FILE" -f segment -segment_time 15 -c copy -y "$NAME"-%03d.$LOCAL_EXT
+  ffmpeg -i "$NAME".$LOCAL_EXT -f segment -segment_time 15 -c copy -y "$NAME"-%03d.$LOCAL_EXT
 
   # Then leave the first 15s clip as is (000).
   # Join the second (001) into the third clip (002), the fourth into the fifth, etc. so the resulting parts are 30s clips.
@@ -256,7 +256,8 @@ offsetSplit () {
   prevPad=$(printf "%03d" $prev)
   # In the root folder:
   while [ -f "$NAME-$curPad.$LOCAL_EXT" ]; do
-    # Use filter (instead of concat protocol) to correctly concat all file types, also M4A, WMA, and WAV (where each file has a 46 byte file header if made with ffmpeg).
+    # Use filter_complex to successfully concat all file types, also M4A, WMA, and WAV (where each file has a 46 byte file header if made with ffmpeg).
+    # Not more overhead compared to using the concat protocol `ffmpeg -f concat -safe 0`, since it has to work on two and two files anyway (and the concat protocol doesn't work with WMA).
     ffmpeg -i "$NAME-$prevPad.$LOCAL_EXT" -i "$NAME-$curPad.$LOCAL_EXT" -filter_complex '[0:0][1:0]concat=n=2:v=0:a=1[out]' -map '[out]' tmp.$LOCAL_EXT
     rm "$NAME"-$curPad.$LOCAL_EXT
     rm "$NAME"-$prevPad.$LOCAL_EXT
@@ -269,15 +270,13 @@ offsetSplit () {
 }
 
 
-# Split the orig. audio input file into 30s parts, keeping the original format/extension.
-ffmpeg -i "$FILE" -f segment -segment_time 30 -c copy "$NAME"-%03d.$EXT
-# TODO:
-# "Rather than doing the work of splitting up the input files, one can use the -s (aka --offset) option to the separate command.
-# This way, you can process a single file iteratively using spleeter, rather than splitting it up manually beforehand."
-# - @avindra, https://github.com/deezer/spleeter/issues/391#issuecomment-642986976
-# BUT:
-# This is not a very significant optimisation, since the if the input file is in a compressed format,
-# the split files will also be compressed, thus not consuming much disk space.
+# Split the file into 30s parts. Using the --process_codec, to avoid a bug with duplicated time segments (repeating seconds), which would otherwise occur when directly splitting audio files of certain codecs like WMA.
+if [[ "$EXT" != "$SPLEETER_OUT_EXT" ]]; then
+  # Create a temp file if the orig. audio file is in a different codec.
+  ffmpeg -i "$NAME".$EXT "$NAME".$SPLEETER_OUT_EXT
+fi
+ffmpeg -i "$NAME".$SPLEETER_OUT_EXT -f segment -segment_time 30 -c copy "$NAME"-%03d.$SPLEETER_OUT_EXT
+
 
 # Do the separation on the parts.
 # 5x: The 5x space of orig. file in M4A comes from the 5 stems.
@@ -289,11 +288,12 @@ joinAllStems 30 $SPLEETER_OUT_EXT
 
 
 # Split the orig. audio file into 30s parts, via splitting to 15s parts and joining two and two (except the first).
-# Does not use $SPLEETER_OUT_EXT files, but original $EXT.
-# Since it can use ffmpeg's filter_complex which works on all $EXT,
-# and without overhead compared to using `ffmpeg -f concat -safe 0`.
-# Since it has to work on two and two files anyway.
-offsetSplit $EXT
+offsetSplit "$NAME" $SPLEETER_OUT_EXT
+
+# Clean up the potential temp file used as the base for splitting, since all the splits are produced, and we only need the splits further on.
+if [[ "$EXT" != "$SPLEETER_OUT_EXT" ]]; then
+  rm "$NAME".$SPLEETER_OUT_EXT
+fi
 
 # Do the separation on the parts (which are now the split offsets of the orig. audio file).
 # 5x2x: 5x space of orig. file in M4A (old stems: vocals-30.m4a etc.) + 5x space of orig. file in M4A (new stems).
@@ -384,11 +384,12 @@ if [[ "$EXT" != "$SPLEETER_OUT_EXT" ]]; then
 fi
 
 
-# Fix the timestamps in the output, so the file won't be treated as malformed/corrupt/invalid if later importing to Audacity or other tool.
+# Fix the timestamps in the output files (for each stem), so they won't be treated as malformed/corrupt/invalid if later importing to Audacity or other tool.
 # We presume to still be in the separated/"$NAME"/ directory here.
 fixTimestamps () {
-  LOCAL_EXT="$2"
+  local LOCAL_EXT STEM
   STEM="$1"
+  LOCAL_EXT="$2"
   mv $STEM.$LOCAL_EXT ${STEM}_but_invalid_timestamps.$LOCAL_EXT
   # Recreate timestamps without re-encoding, to preserve quality.
   ffmpeg -vsync drop -i ${STEM}_but_invalid_timestamps.$LOCAL_EXT -map 0:a? -acodec copy $STEM.$LOCAL_EXT
