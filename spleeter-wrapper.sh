@@ -44,7 +44,7 @@ Usages:
     bash ${0##*/} [--stems INT] [--process_codec EXT] [--file FILE]
     bash ${0##*/} [-s INT] [-p EXT] [-f FILE]
 
-Process the audio FILE and write the result to folder 'separate/FILE/'.
+Process the audio FILE and write the result to folder 'separated/FILE/'.
 When no FILE or when FILE is -, then reads standard input.
 
     -h | --help       Display this help and exit
