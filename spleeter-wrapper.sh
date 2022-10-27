@@ -280,7 +280,7 @@ ffmpeg -i "$NAME".$SPLEETER_OUT_EXT -f segment -segment_time 30 -c copy "$NAME"-
 
 # Do the separation on the parts.
 # 5x: The 5x space of orig. file in M4A comes from the 5 stems.
-nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:$SPLEETER_STEMS -B tensorflow -o separated -c $SPLEETER_OUT_EXT
+nice -n 19 spleeter separate -p spleeter:$SPLEETER_STEMS -B tensorflow -o separated -c $SPLEETER_OUT_EXT "$NAME"-*
 
 # Create separated/"$NAME"/vocals-30.m4a, and similar for the other stems.
 # 5x2x: Temporarily uses 2x space of stems = $stems-30.m4a, before the joined stems are created, and orig. stems deleted, so back to 5x space of orig. file in M4A.
@@ -297,7 +297,7 @@ fi
 
 # Do the separation on the parts (which are now the split offsets of the orig. audio file).
 # 5x2x: 5x space of orig. file in M4A (old stems: vocals-30.m4a etc.) + 5x space of orig. file in M4A (new stems).
-nice -n 19 spleeter separate -i "$NAME"-* -p spleeter:$SPLEETER_STEMS -B tensorflow -o separated -c $SPLEETER_OUT_EXT
+nice -n 19 spleeter separate -p spleeter:$SPLEETER_STEMS -B tensorflow -o separated -c $SPLEETER_OUT_EXT "$NAME"-*
 
 # Create `separated/"$NAME"/vocals-offset.m4a`, and similar for the other stems.
 # 5x2x2x: temporarily 2x space of new stems = $stems-offset.m4a (5x2x2x), when joined stems created, before orig. stems deleted, then back to: 5x2x
